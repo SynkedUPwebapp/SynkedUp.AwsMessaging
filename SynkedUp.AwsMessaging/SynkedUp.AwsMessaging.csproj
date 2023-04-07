@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.42" />
+      <PackageReference Include="AWSSDK.SQS" Version="3.7.100.107" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     </ItemGroup>
 
