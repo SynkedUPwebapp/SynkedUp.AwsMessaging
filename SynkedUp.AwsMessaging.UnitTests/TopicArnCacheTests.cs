@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace SynkedUp.AwsMessaging.UnitTests;
 
-public class TopicArnCacheTests : With_an_automocked<TopicArnCache>
+internal class TopicArnCacheTests : With_an_automocked<TopicArnCache>
 {
     [Test]
     public async Task When_there_is_a_cache_miss()

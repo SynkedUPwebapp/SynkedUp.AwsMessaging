@@ -2,7 +2,7 @@
 
 namespace SynkedUp.AwsMessaging;
 
-public interface IMessageSerializer
+internal interface IMessageSerializer
 {
     string Serialize<T>(T message);
 

@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace SynkedUp.AwsMessaging.UnitTests;
 
-public class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator>
+internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator>
 {
     [Test]
     public async Task When_getting_an_existing_queue_url()

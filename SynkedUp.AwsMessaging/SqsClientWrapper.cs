@@ -4,15 +4,16 @@ using Amazon.SQS.Model;
 
 namespace SynkedUp.AwsMessaging;
 
-public interface ISqsClientWrapper
+internal interface ISqsClientWrapper
 {
     Task<CreateQueueResponse> CreateQueue(CreateQueueRequest request, CancellationToken cancellationToken);
     Task<GetQueueUrlResponse> GetQueueUrl(string queueName, CancellationToken cancellationToken);
     Task<ReceiveMessageResponse> ReceiveMessagesAsync(ReceiveMessageRequest request, CancellationToken cancellationToken);
     ICoreAmazonSQS Client { get; }
+    Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken);
 }
 
-public class SqsClientWrapper : ISqsClientWrapper
+internal class SqsClientWrapper : ISqsClientWrapper
 {
     private readonly AmazonSQSClient client;
 
@@ -33,13 +34,12 @@ public class SqsClientWrapper : ISqsClientWrapper
 
     public async Task<ReceiveMessageResponse> ReceiveMessagesAsync(ReceiveMessageRequest request, CancellationToken cancellationToken)
     {
-        // var request = new ReceiveMessageRequest
-        // {
-        //     QueueUrl = queueUrl,
-        //     MaxNumberOfMessages = subscriberConfig.MaxNumberOfMessages,
-        //     WaitTimeSeconds = subscriberConfig.LongPollingSeconds
-        // };
         return await client.ReceiveMessageAsync(request, cancellationToken);
+    }
+
+    public async Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken)
+    {
+        return await client.DeleteMessageAsync(request, cancellationToken);
     }
 
     public ICoreAmazonSQS Client => client;

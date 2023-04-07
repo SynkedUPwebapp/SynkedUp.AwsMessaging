@@ -2,12 +2,12 @@ using System.Collections.Concurrent;
 
 namespace SynkedUp.AwsMessaging;
 
-public interface ITopicArnCache
+internal interface ITopicArnCache
 {
     Task<string> GetTopicArn(string environment, Topic topic);
 }
 
-public class TopicArnCache : ITopicArnCache
+internal class TopicArnCache : ITopicArnCache
 {
     private readonly ISnsClientWrapper snsClient;
     private readonly ConcurrentDictionary<string, string> cache = new();

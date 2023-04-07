@@ -4,14 +4,14 @@ using Amazon.SimpleNotificationService.Model;
 
 namespace SynkedUp.AwsMessaging;
 
-public interface ISnsClientWrapper
+internal interface ISnsClientWrapper
 {
     Task<PublishResponse> PublishAsync(PublishRequest request);
     Task SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string queueUrl);
     Task<Amazon.SimpleNotificationService.Model.Topic?> FindTopicAsync(string topicName);
 }
 
-public class SnsClientWrapper : ISnsClientWrapper
+internal class SnsClientWrapper : ISnsClientWrapper
 {
     private readonly AmazonSimpleNotificationServiceClient client;
 

@@ -2,12 +2,12 @@ using Amazon.SQS.Model;
 
 namespace SynkedUp.AwsMessaging;
 
-public interface ISubscriptionCreator
+internal interface ISubscriptionCreator
 {
     Task<string> GetQueueUrlAndCreateIfNecessary(Subscription subscription,  CancellationToken cancellationToken);
 }
 
-public class SubscriptionCreator : ISubscriptionCreator
+internal class SubscriptionCreator : ISubscriptionCreator
 {
     private readonly ISubscriberConfig config;
     private readonly ISqsClientWrapper sqsClient;

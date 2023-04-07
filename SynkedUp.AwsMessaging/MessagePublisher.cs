@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace SynkedUp.AwsMessaging;
 
-internal interface IMessagePublisher
+public interface IMessagePublisher
 {
     event OnMessagePublished? OnMessagePublished;
     Task PublishAsync<T>(Message<T> message);
