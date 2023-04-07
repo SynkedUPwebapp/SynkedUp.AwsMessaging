@@ -2,5 +2,5 @@ namespace SynkedUp.AwsMessaging;
 
 public interface IPublisherConfig
 {
-    string TopicArnPrefix { get; }
+    string Environment { get; }
 }

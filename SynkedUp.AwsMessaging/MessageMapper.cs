@@ -4,23 +4,21 @@ namespace SynkedUp.AwsMessaging;
 
 internal interface IMessageMapper
 {
-    PublishRequest ToSnsRequest<T>(Message<T> message);
+    PublishRequest ToSnsRequest<T>(string topicArn, Message<T> message);
 }
 
 internal class MessageMapper : IMessageMapper
 {
     private readonly IMessageSerializer serializer;
-    private readonly ITopicMapper topicMapper;
 
-    public MessageMapper(IMessageSerializer serializer, ITopicMapper topicMapper)
+    public MessageMapper(IMessageSerializer serializer)
     {
         this.serializer = serializer;
-        this.topicMapper = topicMapper;
     }
     
-    public PublishRequest ToSnsRequest<T>(Message<T> message)
+    public PublishRequest ToSnsRequest<T>(string topicArn, Message<T> message)
     {
-        return new PublishRequest(topicMapper.ToArn(message.Topic), serializer.Serialize(message))
+        return new PublishRequest(topicArn, serializer.Serialize(message.Body))
         {
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
