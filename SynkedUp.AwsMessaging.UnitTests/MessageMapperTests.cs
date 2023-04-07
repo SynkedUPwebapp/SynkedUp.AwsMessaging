@@ -20,7 +20,7 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
         GetMock<ITopicMapper>().Setup(x => x.ToArn(topic)).Returns(topicArn);
         GetMock<IMessageSerializer>().Setup(x => x.Serialize(message)).Returns(json);
         
-        var result = ClassUnderTest.Map(message);
+        var result = ClassUnderTest.ToSnsRequest(message);
         
         Assert.That(result.TopicArn, Is.EqualTo(topicArn));
         Assert.That(result.Message, Is.EqualTo(json));

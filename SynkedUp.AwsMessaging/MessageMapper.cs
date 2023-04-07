@@ -2,7 +2,12 @@ using Amazon.SimpleNotificationService.Model;
 
 namespace SynkedUp.AwsMessaging;
 
-internal class MessageMapper
+internal interface IMessageMapper
+{
+    PublishRequest ToSnsRequest<T>(Message<T> message);
+}
+
+internal class MessageMapper : IMessageMapper
 {
     private readonly IMessageSerializer serializer;
     private readonly ITopicMapper topicMapper;
@@ -13,7 +18,7 @@ internal class MessageMapper
         this.topicMapper = topicMapper;
     }
     
-    public PublishRequest Map<T>(Message<T> message)
+    public PublishRequest ToSnsRequest<T>(Message<T> message)
     {
         return new PublishRequest(topicMapper.ToArn(message.Topic), serializer.Serialize(message))
         {
