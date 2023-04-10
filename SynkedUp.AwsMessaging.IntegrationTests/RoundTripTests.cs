@@ -35,7 +35,7 @@ public class RoundTripTests
     public async Task When_publishing_and_subscribing_to_messages()
     {
         var topic = new Topic("aws-messaging", "test", 0);
-        var subscription = new Subscription(topic, "aws-messaging", "tests");
+        var subscription = new Subscription(topic, "aws-messaging", "integration-tests");
         var message = new Message<TestData>(topic, new TestData
         {
             IntData = 1,

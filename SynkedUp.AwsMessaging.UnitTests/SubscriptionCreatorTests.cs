@@ -32,26 +32,26 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
     public async Task When_creating_a_new_queue()
     {
         var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");
+        var cancellationToken = new CancellationToken();
         var environment = "env";
         var queueName = $"{environment}_{subscription}";
-        var cancellationToken = new CancellationToken();
-        CreateQueueRequest? createQueueRequest = null;
+        var deadLetterQueueName = $"{queueName}_dl";
+        var deadLetterQueueArn = "dead-letter-queue-arn";
         var queueUrl = "queue-url";
-        var createQueueResponse = new CreateQueueResponse { QueueUrl = queueUrl };
         var topicArn = "topic-arn";
         var sqsClient = GetMock<IAmazonSQS>().Object;
         GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
         GetMock<IAmazonSQS>().Setup(x => x.GetQueueUrlAsync(queueName, cancellationToken))
             .ThrowsAsync(new QueueDoesNotExistException("test-exception"));
-        GetMock<IAmazonSQS>().Setup(x => x.CreateQueueAsync(IsAny<CreateQueueRequest>(), cancellationToken))
-            .Callback<CreateQueueRequest, CancellationToken>((x, _) => createQueueRequest = x)
-            .ReturnsAsync(createQueueResponse);
+        GetMock<IQueueCreator>().Setup(x => x.CreateDeadLetterQueue(deadLetterQueueName, cancellationToken))
+            .ReturnsAsync(deadLetterQueueArn);
+        GetMock<IQueueCreator>().Setup(x => x.CreateQueue(queueName, deadLetterQueueArn, cancellationToken))
+            .ReturnsAsync(queueUrl);
         GetMock<ITopicArnCache>().Setup(x => x.GetTopicArn(environment, subscription.Topic)).ReturnsAsync(topicArn);
 
         var result = await ClassUnderTest.GetQueueUrlAndCreateIfNecessary(subscription, cancellationToken);
         
         Assert.That(result, Is.EqualTo(queueUrl));
-        Assert.That(createQueueRequest!.QueueName, Is.EqualTo(queueName));
         GetMock<IAmazonSimpleNotificationService>().Verify(x => x.SubscribeQueueAsync(topicArn, sqsClient, queueUrl));
     }
     

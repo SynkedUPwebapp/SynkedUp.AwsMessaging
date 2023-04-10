@@ -15,16 +15,19 @@ internal class SubscriptionCreator : ISubscriptionCreator
     private readonly IAmazonSQS sqsClient;
     private readonly ITopicArnCache topicArnCache;
     private readonly IAmazonSimpleNotificationService snsClient;
+    private readonly IQueueCreator queueCreator;
 
     public SubscriptionCreator(ISubscriberConfig config,
         IAmazonSQS sqsClient,
         ITopicArnCache topicArnCache,
-        IAmazonSimpleNotificationService snsClient)
+        IAmazonSimpleNotificationService snsClient,
+        IQueueCreator queueCreator)
     {
         this.config = config;
         this.sqsClient = sqsClient;
         this.topicArnCache = topicArnCache;
         this.snsClient = snsClient;
+        this.queueCreator = queueCreator;
     }
     
     public async Task<string> GetQueueUrlAndCreateIfNecessary(Subscription subscription,  CancellationToken cancellationToken)
@@ -42,14 +45,11 @@ internal class SubscriptionCreator : ISubscriptionCreator
         }
         catch (QueueDoesNotExistException)
         {
-            var request = new CreateQueueRequest
-            {
-                QueueName = queueName
-            };
-            var response = await sqsClient.CreateQueueAsync(request, cancellationToken);
+            var deadLetterQueueArn = await queueCreator.CreateDeadLetterQueue($"{queueName}_dl", cancellationToken);
+            var queueUrl = await queueCreator.CreateQueue(queueName, deadLetterQueueArn, cancellationToken);
             var topicArn = await topicArnCache.GetTopicArn(config.Environment!, subscription.Topic);
-            await snsClient.SubscribeQueueAsync(topicArn, sqsClient, response.QueueUrl);
-            return response.QueueUrl;
+            await snsClient.SubscribeQueueAsync(topicArn, sqsClient, queueUrl);
+            return queueUrl;
         }
     }
 }

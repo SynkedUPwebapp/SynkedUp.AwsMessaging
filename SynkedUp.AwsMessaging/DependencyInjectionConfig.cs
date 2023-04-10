@@ -29,6 +29,7 @@ public class DependencyInjectionConfig
         services.AddTransient<IMessageSerializer, MessageSerializer>();
         services.AddTransient<ISubscriptionCreator, SubscriptionCreator>();
         services.AddTransient<ITopicArnCache, TopicArnCache>();
+        services.AddTransient<IQueueCreator, QueueCreator>();
 
         services.AddAWSService<IAmazonSQS>();
         services.AddAWSService<IAmazonSimpleNotificationService>();
