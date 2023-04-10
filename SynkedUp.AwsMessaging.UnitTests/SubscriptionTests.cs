@@ -6,13 +6,13 @@ public class SubscriptionTests
 {
     [TestCase("job-costing", "sign-in-handler")]
     [TestCase("data-context", "monolith-listener")]
-    public void When_creating_a_subscription(string productContext, string process)
+    public void When_creating_a_subscription(string subscriber, string process)
     {
         var topic = new Topic("monolith", "user-signed-in", 1);
-        var subscription = new Subscription(topic, productContext, process);
+        var subscription = new Subscription(topic, subscriber, process);
 
         Assert.That(subscription.Topic, Is.SameAs(topic));
-        Assert.That(subscription.SubscriptionName, Is.EqualTo($"{productContext}_{process}"));
+        Assert.That(subscription.SubscriptionName, Is.EqualTo($"{subscriber}_{process}"));
         Assert.That(subscription.ToString(), Is.EqualTo($"{topic}_{subscription.SubscriptionName}"));
     }
 
@@ -41,12 +41,12 @@ public class SubscriptionTests
     [TestCase("job-costing", "")]
     [TestCase("data-context", "^MONOLITH")]
     [TestCase("insights", null)]
-    public void When_attempting_to_create_a_subscription_with_an_invalid_process_name(string productContext,
+    public void When_attempting_to_create_a_subscription_with_an_invalid_process_name(string subscriber,
         string process)
     {
         var topic = new Topic("monolith", "user-signed-in", 1);
 
-        var exception = Assert.Catch(() => { var _ = new Subscription(topic, productContext, process); });
+        var exception = Assert.Catch(() => { var _ = new Subscription(topic, subscriber, process); });
 
         Assert.That(exception!.Message,
             Is.EqualTo("Process name must match pattern: " + Subscription.Pattern + " (Parameter 'process')"));
@@ -56,12 +56,12 @@ public class SubscriptionTests
     public void When_attempting_to_create_a_subscription_but_the_name_is_too_long()
     {
         var topic = new Topic("monolith", "user-signed-in", 1);
-        var productContext = "really-long-subscriber-name";
+        var subscriber = "really-long-subscriber-name";
         var process = "some-listener";
 
-        var exception = Assert.Catch(() => { var _ = new Subscription(topic, productContext, process); });
+        var exception = Assert.Catch(() => { var _ = new Subscription(topic, subscriber, process); });
 
-        var expected = $"The subscription name '{productContext}_{process}' exceeds the 36 character limit";
+        var expected = $"The subscription name '{subscriber}_{process}' exceeds the 36 character limit";
         Assert.That(exception!.Message, Is.EqualTo(expected));
     }
 }
