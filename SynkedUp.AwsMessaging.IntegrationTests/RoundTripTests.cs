@@ -28,7 +28,6 @@ public class RoundTripTests
         
         publisher = serviceProvider.GetRequiredService<IMessagePublisher>();
         subscriber = serviceProvider.GetRequiredService<IMessageSubscriber>();
-        
     }
     
     [Test]
@@ -43,7 +42,7 @@ public class RoundTripTests
         });
         var receivedMessageIds = new ConcurrentQueue<string>();
 
-        await subscriber.Subscribe<TestData>(subscription, x =>
+        await subscriber.SubscribeAsync<TestData>(subscription, x =>
         {
             receivedMessageIds.Enqueue(x.MessageId);
             return Task.CompletedTask;

@@ -6,7 +6,7 @@ namespace SynkedUp.AwsMessaging;
 
 public interface IMessageSubscriber : IDisposable
 {
-    Task Subscribe<T>(Subscription subscription, Func<Message<T>, Task> messageHandler);
+    Task SubscribeAsync<T>(Subscription subscription, Func<Message<T>, Task> messageHandler);
     event OnMessageReceived? OnMessageReceived;
     event OnException? OnException;
 }
@@ -34,7 +34,7 @@ internal class MessageSubscriber : IMessageSubscriber
     public event OnMessageReceived? OnMessageReceived;
     public event OnException? OnException;
     
-    public async Task Subscribe<T>(Subscription subscription, Func<Message<T>, Task> messageHandler)
+    public async Task SubscribeAsync<T>(Subscription subscription, Func<Message<T>, Task> messageHandler)
     {
         var cancellationToken = cancellationTokenSource.Token;
         var queueUrl = await subscriptionCreator.GetQueueUrlAndCreateIfNecessary(subscription, cancellationToken);

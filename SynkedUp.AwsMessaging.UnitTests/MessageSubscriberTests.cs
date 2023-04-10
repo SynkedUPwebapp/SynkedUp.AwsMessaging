@@ -47,7 +47,7 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
             .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m2" }))
             .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m3" }));
 
-        await ClassUnderTest.Subscribe<TestData>(subscription, message =>
+        await ClassUnderTest.SubscribeAsync<TestData>(subscription, message =>
         {
             messagesReceived.Add(message);
             return Task.CompletedTask;
