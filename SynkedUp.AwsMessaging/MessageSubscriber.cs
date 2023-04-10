@@ -4,14 +4,14 @@ using Amazon.SQS.Model;
 
 namespace SynkedUp.AwsMessaging;
 
-public interface IMessageSubscriber
+public interface IMessageSubscriber : IDisposable
 {
     Task Subscribe<T>(Subscription subscription, Func<Message<T>, Task> messageHandler);
     event OnMessageReceived? OnMessageReceived;
     event OnException? OnException;
 }
 
-internal class MessageSubscriber : IMessageSubscriber, IDisposable
+internal class MessageSubscriber : IMessageSubscriber
 {
     private readonly ISubscriptionCreator subscriptionCreator;
     private readonly ISubscriberConfig config;
@@ -46,11 +46,11 @@ internal class MessageSubscriber : IMessageSubscriber, IDisposable
         };
         
 #pragma warning disable CS4014
-        Task.Run(() =>
+        Task.Run(async () =>
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                GetMessageBatch(subscription, request, messageHandler, cancellationToken);
+                await GetMessageBatch(subscription, request, messageHandler, cancellationToken);
             }
         }, cancellationTokenSource.Token);
 #pragma warning restore CS4014
