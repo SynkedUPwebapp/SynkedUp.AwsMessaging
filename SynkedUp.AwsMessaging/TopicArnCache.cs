@@ -20,7 +20,7 @@ internal class TopicArnCache : ITopicArnCache
     
     public async Task<string> GetTopicArn(string environment, Topic topic)
     {
-        var topicName = $"{environment}_{topic}";
+        var topicName = topic.EnvironmentName(environment);
         if (cache.TryGetValue(topicName, out var topicArn))
         {
             return topicArn;

@@ -8,6 +8,7 @@ public class Topic
     internal static string Pattern = "^[a-z]+[a-z-]*[a-z]+$";
     private static Regex regex = new(Pattern, RegexOptions.Compiled);
     private const int TopicNameMaximumLength = 36;
+    private const int MaxEnvironmentLength = 3;
 
     public Topic(string publisher, string eventName, int version)
     {
@@ -32,4 +33,13 @@ public class Topic
     }
 
     public override string ToString() => fullName;
+
+    internal string EnvironmentName(string environment)
+    {
+        if (environment.Length > MaxEnvironmentLength)
+        {
+            throw new Exception($"Environment {environment} must not exceed {MaxEnvironmentLength} characters");
+        }
+        return $"{environment}_{fullName}";
+    }
 }

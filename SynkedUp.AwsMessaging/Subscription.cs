@@ -36,4 +36,9 @@ public class Subscription
     }
 
     public override string ToString() => fullName;
+    
+    internal string EnvironmentName(string environment)
+    {
+        return $"{Topic.EnvironmentName(environment)}_{SubscriptionName}";
+    }
 }

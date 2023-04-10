@@ -16,7 +16,7 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
     {
         var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");
         var environment = "env";
-        var queueName = $"{environment}_{subscription}";
+        var queueName = subscription.EnvironmentName(environment);
         var cancellationToken = new CancellationToken();
         var getQueueUrlResponse = new GetQueueUrlResponse { QueueUrl = "queue-url" };
         GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
@@ -34,7 +34,7 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
         var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");
         var cancellationToken = new CancellationToken();
         var environment = "env";
-        var queueName = $"{environment}_{subscription}";
+        var queueName = subscription.EnvironmentName(environment);
         var deadLetterQueueName = $"{queueName}_dl";
         var deadLetterQueueArn = "dead-letter-queue-arn";
         var queueUrl = "queue-url";
@@ -53,18 +53,5 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
         
         Assert.That(result, Is.EqualTo(queueUrl));
         GetMock<IAmazonSimpleNotificationService>().Verify(x => x.SubscribeQueueAsync(topicArn, sqsClient, queueUrl));
-    }
-    
-    [Test]
-    public void When_getting_an_existing_queue_url_but_the_environment_is_too_long()
-    {
-        var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");
-        var environment = "1234";
-        var cancellationToken = new CancellationToken();
-        GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
-
-        var exception = Assert.CatchAsync(async () => await ClassUnderTest.GetQueueUrlAndCreateIfNecessary(subscription, cancellationToken));
-        
-        Assert.That(exception!.Message, Is.EqualTo($"Environment {environment} must not exceed {EnvironmentRestrictions.MaxLength} characters"));
     }
 }

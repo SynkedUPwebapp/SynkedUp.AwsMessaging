@@ -13,7 +13,7 @@ internal class TopicArnCacheTests : With_an_automocked<TopicArnCache>
     {
         var topic = new Topic("test", "event", 0);
         var environment = "env";
-        var topicName = $"{environment}_{topic}";
+        var topicName = topic.EnvironmentName(environment);
         var topicArn = "topic-arn";
         var awsTopic = new Amazon.SimpleNotificationService.Model.Topic
         {
@@ -30,11 +30,11 @@ internal class TopicArnCacheTests : With_an_automocked<TopicArnCache>
     }
     
     [Test]
-    public async Task When_there_is_a_cache_miss_and_the_topic_could_not_be_found()
+    public void When_there_is_a_cache_miss_and_the_topic_could_not_be_found()
     {
         var topic = new Topic("test", "event", 0);
         var environment = "env";
-        var topicName = $"{environment}_{topic}";
+        var topicName = topic.EnvironmentName(environment);
         GetMock<IAmazonSimpleNotificationService>().Setup(x => x.FindTopicAsync(topicName))
             .ReturnsNullAsync();
 
@@ -50,7 +50,7 @@ internal class TopicArnCacheTests : With_an_automocked<TopicArnCache>
     {
         var topic = new Topic("test", "event", 0);
         var environment = "env";
-        var topicName = $"{environment}_{topic}";
+        var topicName = topic.EnvironmentName(environment);
         var topicArn = "topic-arn";
         ClassUnderTest.SetArn(topicName, topicArn);
         Assert.That(ClassUnderTest.IsArnSet(topicName), Is.True);

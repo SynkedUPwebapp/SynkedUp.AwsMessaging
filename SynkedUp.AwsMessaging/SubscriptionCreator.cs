@@ -32,12 +32,7 @@ internal class SubscriptionCreator : ISubscriptionCreator
     
     public async Task<string> GetQueueUrlAndCreateIfNecessary(Subscription subscription,  CancellationToken cancellationToken)
     {
-        if (config.Environment?.Length > EnvironmentRestrictions.MaxLength)
-        {
-            throw new Exception($"Environment {config.Environment} must not exceed {EnvironmentRestrictions.MaxLength} characters");
-        }
-        
-        var queueName = $"{config.Environment}_{subscription}";
+        var queueName = subscription.EnvironmentName(config.Environment);
         try
         {
             var response = await sqsClient.GetQueueUrlAsync(queueName, cancellationToken);

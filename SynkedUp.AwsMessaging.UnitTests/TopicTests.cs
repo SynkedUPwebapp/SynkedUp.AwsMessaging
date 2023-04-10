@@ -62,4 +62,24 @@ public class TopicTests
         var expected = $"The topic name '{publisher}_{eventName}_v{version}' exceeds the 36 character limit";
         Assert.That(exception!.Message, Is.EqualTo(expected));
     }
+
+    [Test]
+    public void When_getting_the_environment_name()
+    {
+        var topic = new Topic("publisher", "event-name", 1);
+        var environment = "dev";
+        
+        Assert.That(topic.EnvironmentName(environment), Is.EqualTo($"{environment}_publisher_event-name_v1"));
+    }
+    
+    [Test]
+    public void When_getting_the_environment_name_but_the_environment_is_too_long()
+    {
+        var topic = new Topic("publisher", "event-name", 1);
+        var environment = "1234";
+        
+        var exception = Assert.Catch(() => topic.EnvironmentName(environment));
+        
+        Assert.That(exception!.Message, Is.EqualTo($"Environment {environment} must not exceed 3 characters"));
+    }
 }
