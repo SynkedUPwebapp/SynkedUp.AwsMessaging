@@ -4,12 +4,13 @@ using Amazon.SQS.Model;
 
 namespace SynkedUp.AwsMessaging;
 
-internal interface ISubscriptionCreator
+internal interface IQueueUrlRetriever
 {
     Task<string> GetQueueUrlAndCreateIfNecessary(Subscription subscription,  CancellationToken cancellationToken);
+    Task<string> GetDeadLetterQueueUrl(Subscription subscription, CancellationToken cancellationToken);
 }
 
-internal class SubscriptionCreator : ISubscriptionCreator
+internal class QueueUrlRetriever : IQueueUrlRetriever
 {
     private readonly ISubscriberConfig config;
     private readonly IAmazonSQS sqsClient;
@@ -17,7 +18,7 @@ internal class SubscriptionCreator : ISubscriptionCreator
     private readonly IAmazonSimpleNotificationService snsClient;
     private readonly IQueueCreator queueCreator;
 
-    public SubscriptionCreator(ISubscriberConfig config,
+    public QueueUrlRetriever(ISubscriberConfig config,
         IAmazonSQS sqsClient,
         ITopicArnCache topicArnCache,
         IAmazonSimpleNotificationService snsClient,
@@ -46,5 +47,12 @@ internal class SubscriptionCreator : ISubscriptionCreator
             await snsClient.SubscribeQueueAsync(topicArn, sqsClient, queueUrl);
             return queueUrl;
         }
+    }
+
+    public async Task<string> GetDeadLetterQueueUrl(Subscription subscription, CancellationToken cancellationToken)
+    {
+        var queueName = subscription.EnvironmentDeadLetterName(config.Environment);
+        var response = await sqsClient.GetQueueUrlAsync(queueName, cancellationToken);
+        return response.QueueUrl;
     }
 }

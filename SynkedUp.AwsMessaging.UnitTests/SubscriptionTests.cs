@@ -72,6 +72,16 @@ public class SubscriptionTests
         var subscription = new Subscription(topic, "subscriber", "process");
         var environment = "dev";
         
-        Assert.That(subscription.EnvironmentName(environment), Is.EqualTo($"{environment}_publisher_event-name_v1_subscriber_process"));
+        Assert.That(subscription.EnvironmentName(environment), Is.EqualTo("dev_publisher_event-name_v1_subscriber_process"));
+    }
+
+    [Test]
+    public void When_getting_the_environment_dead_letter_queue_name()
+    {
+        var topic = new Topic("publisher", "event-name", 1);
+        var subscription = new Subscription(topic, "subscriber", "process");
+        var environment = "dev";
+        
+        Assert.That(subscription.EnvironmentDeadLetterName(environment), Is.EqualTo("dev_publisher_event-name_v1_subscriber_process_dl"));
     }
 }

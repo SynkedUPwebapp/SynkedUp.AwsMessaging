@@ -31,7 +31,7 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         ReceiveMessageRequest? request = null;
         var maxNumberOfMessages = 10;
         var waitTimeSeconds = 20;
-        GetMock<ISubscriptionCreator>().Setup(x => x.GetQueueUrlAndCreateIfNecessary(subscription, IsAny<CancellationToken>()))
+        GetMock<IQueueUrlRetriever>().Setup(x => x.GetQueueUrlAndCreateIfNecessary(subscription, IsAny<CancellationToken>()))
             .ReturnsAsync(queueUrl);
         GetMock<ISubscriberConfig>().Setup(x => x.MaxNumberOfMessages).Returns(maxNumberOfMessages);
         GetMock<ISubscriberConfig>().Setup(x => x.LongPollingSeconds).Returns(waitTimeSeconds);
@@ -53,7 +53,7 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
             return Task.CompletedTask;
         });
         
-        GetMock<ISubscriptionCreator>().Verify(x => x.GetQueueUrlAndCreateIfNecessary(subscription, IsAny<CancellationToken>()));
+        GetMock<IQueueUrlRetriever>().Verify(x => x.GetQueueUrlAndCreateIfNecessary(subscription, IsAny<CancellationToken>()));
         
         await Task.Delay(100);
         
@@ -196,5 +196,59 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         GetMock<IAmazonSQS>().Verify(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken));
         Assert.That(deleteRequest!.QueueUrl, Is.EqualTo(request.QueueUrl));
         Assert.That(deleteRequest.Entries.Select(x => x.ReceiptHandle), Is.EqualTo(new [] { "receipt-handle-1", "receipt-handle-3" }));
+    }
+    
+    [Test]
+    public async Task When_subscribing_to_a_dead_letter_queue_successfully()
+    {
+        var subscription = new Subscription(new Topic("test", "event", 1), "test", "listener");
+        var queueUrl = "queue-url";
+        var messagesReceived = new List<Message<TestData>>();
+        var messagesResponse = new ReceiveMessageResponse
+        {
+            Messages = new List<Message>
+            {
+                new(),
+                new(),
+                new()
+            }
+        };
+        ReceiveMessageRequest? request = null;
+        var maxNumberOfMessages = 10;
+        var waitTimeSeconds = 20;
+        GetMock<IQueueUrlRetriever>().Setup(x => x.GetDeadLetterQueueUrl(subscription, IsAny<CancellationToken>()))
+            .ReturnsAsync(queueUrl);
+        GetMock<ISubscriberConfig>().Setup(x => x.MaxNumberOfMessages).Returns(maxNumberOfMessages);
+        GetMock<ISubscriberConfig>().Setup(x => x.LongPollingSeconds).Returns(waitTimeSeconds);
+        GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(IsAny<ReceiveMessageRequest>(), IsAny<CancellationToken>()))
+            .Callback<ReceiveMessageRequest, CancellationToken>((x, _) => request = x)
+            .Returns(async () =>
+            {
+                await Task.Delay(50);
+                return messagesResponse;
+            });
+        GetMock<IMessageMapper>().SetupSequence(x => x.FromSqsMessage<TestData>(subscription.Topic, IsAny<Message>()))
+            .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m1" }))
+            .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m2" }))
+            .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m3" }));
+
+        await ClassUnderTest.SubscribeToDeadLettersAsync<TestData>(subscription, message =>
+        {
+            messagesReceived.Add(message);
+            return Task.CompletedTask;
+        });
+        
+        GetMock<IQueueUrlRetriever>().Verify(x => x.GetDeadLetterQueueUrl(subscription, IsAny<CancellationToken>()));
+        
+        await Task.Delay(100);
+        
+        Assert.That(request!.QueueUrl, Is.EqualTo(queueUrl));
+        Assert.That(request.MaxNumberOfMessages, Is.EqualTo(maxNumberOfMessages));
+        Assert.That(request.WaitTimeSeconds, Is.EqualTo(waitTimeSeconds));
+        
+        Assert.That(messagesReceived.Count, Is.GreaterThanOrEqualTo(3));
+        Assert.That(messagesReceived[0].Body.Data, Is.EqualTo("m1"));
+        Assert.That(messagesReceived[1].Body.Data, Is.EqualTo("m2"));
+        Assert.That(messagesReceived[2].Body.Data, Is.EqualTo("m3"));
     }
 }

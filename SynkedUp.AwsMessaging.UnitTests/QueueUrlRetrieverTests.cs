@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace SynkedUp.AwsMessaging.UnitTests;
 
-internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator>
+internal class QueueUrlRetrieverTests : With_an_automocked<QueueUrlRetriever>
 {
     [Test]
     public async Task When_getting_an_existing_queue_url()
@@ -35,7 +35,7 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
         var cancellationToken = new CancellationToken();
         var environment = "env";
         var queueName = subscription.EnvironmentName(environment);
-        var deadLetterQueueName = $"{queueName}_dl";
+        var deadLetterQueueName = subscription.EnvironmentDeadLetterName(environment);
         var deadLetterQueueArn = "dead-letter-queue-arn";
         var queueUrl = "queue-url";
         var topicArn = "topic-arn";
@@ -53,5 +53,22 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
         
         Assert.That(result, Is.EqualTo(queueUrl));
         GetMock<IAmazonSimpleNotificationService>().Verify(x => x.SubscribeQueueAsync(topicArn, sqsClient, queueUrl));
+    }
+    
+    [Test]
+    public async Task When_getting_an_existing_dead_letter_queue_url()
+    {
+        var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");
+        var environment = "env";
+        var queueName = subscription.EnvironmentDeadLetterName(environment);
+        var cancellationToken = new CancellationToken();
+        var getQueueUrlResponse = new GetQueueUrlResponse { QueueUrl = "queue-url" };
+        GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
+        GetMock<IAmazonSQS>().Setup(x => x.GetQueueUrlAsync(queueName, cancellationToken))
+            .ReturnsAsync(getQueueUrlResponse);
+
+        var result = await ClassUnderTest.GetDeadLetterQueueUrl(subscription, cancellationToken);
+        
+        Assert.That(result, Is.EqualTo(getQueueUrlResponse.QueueUrl));
     }
 }

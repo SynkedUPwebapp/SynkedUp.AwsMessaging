@@ -27,7 +27,7 @@ public class DependencyInjectionConfig
 
         services.AddTransient<IMessageMapper, MessageMapper>();
         services.AddTransient<IMessageSerializer, MessageSerializer>();
-        services.AddTransient<ISubscriptionCreator, SubscriptionCreator>();
+        services.AddTransient<IQueueUrlRetriever, QueueUrlRetriever>();
         services.AddTransient<ITopicArnCache, TopicArnCache>();
         services.AddTransient<IQueueCreator, QueueCreator>();
 
