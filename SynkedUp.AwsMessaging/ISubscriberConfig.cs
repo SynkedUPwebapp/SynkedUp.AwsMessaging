@@ -6,4 +6,5 @@ public interface ISubscriberConfig
     int MaxNumberOfMessages { get; }
     int LongPollingSeconds { get; }
     int DeadLetterAfterAttempts { get; }
+    int VisibilityTimeoutSeconds { get; }
 }

@@ -33,7 +33,8 @@ internal class QueueCreator : IQueueCreator
                 {
                     DeadLetterTargetArn = deadLetterQueueArn,
                     MaxReceiveCount = config.DeadLetterAfterAttempts
-                })
+                }),
+                [QueueAttributeName.VisibilityTimeout] = config.VisibilityTimeoutSeconds.ToString()
             }
         };
         var response = await sqsClient.CreateQueueAsync(request, cancellationToken);

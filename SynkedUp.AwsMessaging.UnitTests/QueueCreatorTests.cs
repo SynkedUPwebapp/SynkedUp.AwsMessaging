@@ -19,11 +19,13 @@ internal class QueueCreatorTests : With_an_automocked<QueueCreator>
         var deadLetterQueueArn = "dl-queue-arn";
         var cancellationToken = new CancellationToken();
         var deadLetterAfterAttempts = 7;
+        var timeoutVisibilitySeconds = 15;
         RedrivePolicy? redrivePolicy = null;
         var serializedRedrivePolicy = "redrive-policy";
         CreateQueueRequest? request = null;
         var response = new CreateQueueResponse { QueueUrl = "queue-url" };
         GetMock<ISubscriberConfig>().Setup(x => x.DeadLetterAfterAttempts).Returns(deadLetterAfterAttempts);
+        GetMock<ISubscriberConfig>().Setup(x => x.VisibilityTimeoutSeconds).Returns(timeoutVisibilitySeconds);
         GetMock<IMessageSerializer>().Setup(x => x.Serialize(IsAny<RedrivePolicy>()))
             .Callback<RedrivePolicy>(x => redrivePolicy = x)
             .Returns(serializedRedrivePolicy);
@@ -41,6 +43,7 @@ internal class QueueCreatorTests : With_an_automocked<QueueCreator>
         
         Assert.That(request!.QueueName, Is.EqualTo(queueName));
         Assert.That(request.Attributes[QueueAttributeName.RedrivePolicy], Is.EqualTo(serializedRedrivePolicy));
+        Assert.That(request.Attributes[QueueAttributeName.VisibilityTimeout], Is.EqualTo($"{timeoutVisibilitySeconds}"));
     }
 
     [Test]
