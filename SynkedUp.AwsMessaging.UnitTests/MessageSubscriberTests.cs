@@ -190,10 +190,7 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
             .Setup(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken))
             .Callback<DeleteMessageBatchRequest, CancellationToken>((x, _) => deleteRequest = x);
 
-        await ClassUnderTest.GetMessageBatch<int>(subscription, request, x =>
-        {
-            return Task.CompletedTask;
-        }, cancellationToken);
+        await ClassUnderTest.GetMessageBatch<int>(subscription, request, x => Task.CompletedTask, cancellationToken);
         
         GetMock<ISqsClientWrapper>().Verify(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken));
         Assert.That(deleteRequest!.QueueUrl, Is.EqualTo(request.QueueUrl));
