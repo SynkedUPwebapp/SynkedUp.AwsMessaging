@@ -60,7 +60,7 @@ internal class MessageMapper : IMessageMapper
             innerException = e;
         }
 
-        throw new Exception($"Error deserializing message on topic: {topic}", innerException);
+        throw new Exception($"Error deserializing message on topic {topic}; message body: {sqsMessage.Body}", innerException);
     }
 
     public string GetMessageAttribute(Message sqsMessage, string key, string defaultValue)

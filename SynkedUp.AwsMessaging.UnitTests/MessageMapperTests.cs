@@ -97,7 +97,7 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
 
         var exception = Assert.Catch(() => ClassUnderTest.FromSqsMessage<TestData>(topic, sqsMessage));
         
-        Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic: {topic}"));
+        Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic {topic}; message body: {sqsMessage.Body}"));
     }
     
     [Test]
@@ -114,7 +114,7 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
 
         var exception = Assert.Catch(() => ClassUnderTest.FromSqsMessage<TestData>(topic, sqsMessage));
         
-        Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic: {topic}"));
+        Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic {topic}; message body: {sqsMessage.Body}"));
         Assert.That(exception.InnerException, Is.SameAs(deserializationException));
     }
 }
