@@ -32,6 +32,29 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
         Assert.That(result.MessageAttributes["PublishedAt"].DataType, Is.EqualTo("String"));
         Assert.That(result.MessageAttributes["PublishedAt"].StringValue, Is.EqualTo(message.PublishedAt!.Value.ToString("O")));
     }
+    
+    [Test]
+    public void When_mapping_a_message_to_an_sns_request_without_correlation_id()
+    {
+        var topic = new Topic("publisher", "test-event", 1);
+        var message = new Message<TestData>(topic, new TestData { Data = "hello there" })
+        {
+            PublishedAt = DateTimeOffset.UtcNow
+        };
+        var topicArn = "topic-arn";
+        var json = "{\"example\":\"json\"}";
+        GetMock<IMessageSerializer>().Setup(x => x.Serialize(message.Body)).Returns(json);
+        
+        var result = ClassUnderTest.ToSnsRequest(topicArn, message);
+        
+        Assert.That(result.TopicArn, Is.EqualTo(topicArn));
+        Assert.That(result.Message, Is.EqualTo(json));
+        Assert.That(result.MessageAttributes, Does.Not.ContainKey("CorrelationId"));
+        Assert.That(result.MessageAttributes["MessageId"].DataType, Is.EqualTo("String"));
+        Assert.That(result.MessageAttributes["MessageId"].StringValue, Is.EqualTo(message.MessageId));
+        Assert.That(result.MessageAttributes["PublishedAt"].DataType, Is.EqualTo("String"));
+        Assert.That(result.MessageAttributes["PublishedAt"].StringValue, Is.EqualTo(message.PublishedAt!.Value.ToString("O")));
+    }
 
     [Test]
     public void When_mapping_from_an_sqs_message()

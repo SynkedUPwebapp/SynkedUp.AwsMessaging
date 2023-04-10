@@ -21,14 +21,19 @@ internal class MessageMapper : IMessageMapper
     
     public PublishRequest ToSnsRequest<T>(string topicArn, Message<T> message)
     {
+        var messageAttributes = new Dictionary<string, MessageAttributeValue>
+        {
+            ["MessageId"] = new() { DataType = "String", StringValue = message.MessageId },
+            ["PublishedAt"] = new() { DataType = "String", StringValue = message.PublishedAt!.Value.ToString("O") }
+        };
+        if (!string.IsNullOrEmpty(message.CorrelationId))
+        {
+            messageAttributes["CorrelationId"] = new MessageAttributeValue { DataType = "String", StringValue = message.CorrelationId };
+        }
+        
         return new PublishRequest(topicArn, serializer.Serialize(message.Body))
         {
-            MessageAttributes = new Dictionary<string, MessageAttributeValue>
-            {
-                ["MessageId"] = new() { DataType = "String", StringValue = message.MessageId },
-                ["CorrelationId"] = new() { DataType = "String", StringValue = message.CorrelationId },
-                ["PublishedAt"] = new() { DataType = "String", StringValue = message.PublishedAt!.Value.ToString("O") }
-            }
+            MessageAttributes = messageAttributes
         };
     }
 
