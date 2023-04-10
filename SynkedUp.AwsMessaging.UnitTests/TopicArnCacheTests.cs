@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Amazon.SimpleNotificationService;
 using Emmersion.Testing;
 using Moq;
 using NUnit.Framework;
@@ -18,14 +19,14 @@ internal class TopicArnCacheTests : With_an_automocked<TopicArnCache>
         {
             TopicArn = topicArn
         };
-        GetMock<ISnsClientWrapper>().Setup(x => x.FindTopicAsync(topicName))
+        GetMock<IAmazonSimpleNotificationService>().Setup(x => x.FindTopicAsync(topicName))
             .ReturnsAsync(awsTopic);
 
         var result = await ClassUnderTest.GetTopicArn(environment, topic);
         
         Assert.That(result, Is.EqualTo(topicArn));
         Assert.That(ClassUnderTest.IsArnSet(topicName), Is.True);
-        GetMock<ISnsClientWrapper>().Verify(x => x.FindTopicAsync(topicName), Times.Exactly(1));
+        GetMock<IAmazonSimpleNotificationService>().Verify(x => x.FindTopicAsync(topicName), Times.Exactly(1));
     }
     
     [Test]
@@ -34,14 +35,14 @@ internal class TopicArnCacheTests : With_an_automocked<TopicArnCache>
         var topic = new Topic("test", "event", 0);
         var environment = "env";
         var topicName = $"{environment}:{topic}";
-        GetMock<ISnsClientWrapper>().Setup(x => x.FindTopicAsync(topicName))
+        GetMock<IAmazonSimpleNotificationService>().Setup(x => x.FindTopicAsync(topicName))
             .ReturnsNullAsync();
 
         var exception = Assert.CatchAsync(async () => await ClassUnderTest.GetTopicArn(environment, topic));
         
         Assert.That(exception!.Message, Is.EqualTo($"Unable to find topic: {topicName}"));
         Assert.That(ClassUnderTest.IsArnSet(topicName), Is.False);
-        GetMock<ISnsClientWrapper>().Verify(x => x.FindTopicAsync(topicName), Times.Exactly(1));
+        GetMock<IAmazonSimpleNotificationService>().Verify(x => x.FindTopicAsync(topicName), Times.Exactly(1));
     }
     
     [Test]
@@ -57,6 +58,6 @@ internal class TopicArnCacheTests : With_an_automocked<TopicArnCache>
         var result = await ClassUnderTest.GetTopicArn(environment, topic);
         
         Assert.That(result, Is.EqualTo(topicArn));
-        GetMock<ISnsClientWrapper>().VerifyNever(x => x.FindTopicAsync(IsAny<string>()));
+        GetMock<IAmazonSimpleNotificationService>().VerifyNever(x => x.FindTopicAsync(IsAny<string>()));
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Amazon.SimpleNotificationService;
 
 namespace SynkedUp.AwsMessaging;
 
@@ -9,10 +10,10 @@ internal interface ITopicArnCache
 
 internal class TopicArnCache : ITopicArnCache
 {
-    private readonly ISnsClientWrapper snsClient;
+    private readonly IAmazonSimpleNotificationService snsClient;
     private readonly ConcurrentDictionary<string, string> cache = new();
 
-    public TopicArnCache(ISnsClientWrapper snsClient)
+    public TopicArnCache(IAmazonSimpleNotificationService snsClient)
     {
         this.snsClient = snsClient;
     }

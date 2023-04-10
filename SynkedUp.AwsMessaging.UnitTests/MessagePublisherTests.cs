@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Emmersion.Testing;
 using Moq;
@@ -23,7 +24,7 @@ internal class MessagePublisherTests : With_an_automocked<MessagePublisher>
 
         await ClassUnderTest.PublishAsync(message);
         
-        GetMock<ISnsClientWrapper>().Verify(x => x.PublishAsync(publishRequest));
+        GetMock<IAmazonSimpleNotificationService>().Verify(x => x.PublishAsync(publishRequest, IsAny<CancellationToken>()));
     }
     
     [Test]
@@ -37,8 +38,8 @@ internal class MessagePublisherTests : With_an_automocked<MessagePublisher>
         GetMock<IPublisherConfig>().Setup(x => x.Environment).Returns(environment);
         GetMock<ITopicArnCache>().Setup(x => x.GetTopicArn(environment, message.Topic)).ReturnsAsync(topicArn);
         GetMock<IMessageMapper>().Setup(x => x.ToSnsRequest("", message)).Returns(publishRequest);
-        GetMock<ISnsClientWrapper>()
-            .Setup(x => x.PublishAsync(IsAny<PublishRequest>()))
+        GetMock<IAmazonSimpleNotificationService>()
+            .Setup(x => x.PublishAsync(IsAny<PublishRequest>(), IsAny<CancellationToken>()))
             .Returns(Task.Run(() =>
             {
                 Thread.Sleep(150);

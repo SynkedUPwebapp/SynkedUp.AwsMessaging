@@ -1,3 +1,5 @@
+using Amazon.SimpleNotificationService;
+using Amazon.SQS;
 using Amazon.SQS.Model;
 
 namespace SynkedUp.AwsMessaging;
@@ -10,14 +12,14 @@ internal interface ISubscriptionCreator
 internal class SubscriptionCreator : ISubscriptionCreator
 {
     private readonly ISubscriberConfig config;
-    private readonly ISqsClientWrapper sqsClient;
+    private readonly IAmazonSQS sqsClient;
     private readonly ITopicArnCache topicArnCache;
-    private readonly ISnsClientWrapper snsClient;
+    private readonly IAmazonSimpleNotificationService snsClient;
 
     public SubscriptionCreator(ISubscriberConfig config,
-        ISqsClientWrapper sqsClient,
+        IAmazonSQS sqsClient,
         ITopicArnCache topicArnCache,
-        ISnsClientWrapper snsClient)
+        IAmazonSimpleNotificationService snsClient)
     {
         this.config = config;
         this.sqsClient = sqsClient;
@@ -35,7 +37,7 @@ internal class SubscriptionCreator : ISubscriptionCreator
         var queueName = $"{config.Environment}:{subscription}";
         try
         {
-            var response = await sqsClient.GetQueueUrl(queueName, cancellationToken);
+            var response = await sqsClient.GetQueueUrlAsync(queueName, cancellationToken);
             return response.QueueUrl;
         }
         catch (QueueDoesNotExistException)
@@ -44,9 +46,9 @@ internal class SubscriptionCreator : ISubscriptionCreator
             {
                 QueueName = queueName
             };
-            var response = await sqsClient.CreateQueue(request, cancellationToken);
+            var response = await sqsClient.CreateQueueAsync(request, cancellationToken);
             var topicArn = await topicArnCache.GetTopicArn(config.Environment!, subscription.Topic);
-            await snsClient.SubscribeQueueAsync(topicArn, sqsClient.Client, response.QueueUrl);
+            await snsClient.SubscribeQueueAsync(topicArn, sqsClient, response.QueueUrl);
             return response.QueueUrl;
         }
     }

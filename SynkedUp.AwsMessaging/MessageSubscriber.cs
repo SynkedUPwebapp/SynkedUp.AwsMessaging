@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Amazon.SQS;
 using Amazon.SQS.Model;
 
 namespace SynkedUp.AwsMessaging;
@@ -14,13 +15,13 @@ internal class MessageSubscriber : IMessageSubscriber, IDisposable
 {
     private readonly ISubscriptionCreator subscriptionCreator;
     private readonly ISubscriberConfig config;
-    private readonly ISqsClientWrapper sqsClient;
+    private readonly IAmazonSQS sqsClient;
     private readonly IMessageMapper messageMapper;
     private readonly CancellationTokenSource cancellationTokenSource;
 
     public MessageSubscriber(ISubscriptionCreator subscriptionCreator,
         ISubscriberConfig config,
-        ISqsClientWrapper sqsClient,
+        IAmazonSQS sqsClient,
         IMessageMapper messageMapper)
     {
         this.subscriptionCreator = subscriptionCreator;
@@ -57,7 +58,7 @@ internal class MessageSubscriber : IMessageSubscriber, IDisposable
 
     public async Task GetMessageBatch<T>(Subscription subscription, ReceiveMessageRequest request, Func<Message<T>, Task> messageHandler, CancellationToken cancellationToken)
     {
-        var response = await sqsClient.ReceiveMessagesAsync(request, cancellationToken);
+        var response = await sqsClient.ReceiveMessageAsync(request, cancellationToken);
         var batchDeleteRequest = new DeleteMessageBatchRequest
         {
             QueueUrl = request.QueueUrl,

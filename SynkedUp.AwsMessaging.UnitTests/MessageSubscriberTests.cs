@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.SQS;
 using Amazon.SQS.Model;
 using Emmersion.Testing;
 using Moq;
@@ -34,7 +35,7 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
             .ReturnsAsync(queueUrl);
         GetMock<ISubscriberConfig>().Setup(x => x.MaxNumberOfMessages).Returns(maxNumberOfMessages);
         GetMock<ISubscriberConfig>().Setup(x => x.LongPollingSeconds).Returns(waitTimeSeconds);
-        GetMock<ISqsClientWrapper>().Setup(x => x.ReceiveMessagesAsync(IsAny<ReceiveMessageRequest>(), IsAny<CancellationToken>()))
+        GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(IsAny<ReceiveMessageRequest>(), IsAny<CancellationToken>()))
             .Callback<ReceiveMessageRequest, CancellationToken>((x, _) => request = x)
             .Returns(async () =>
             {
@@ -178,7 +179,7 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
             }
         };
         DeleteMessageBatchRequest? deleteRequest = null;
-        GetMock<ISqsClientWrapper>().Setup(x => x.ReceiveMessagesAsync(request, cancellationToken))
+        GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(request, cancellationToken))
             .ReturnsAsync(messages);
         GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<int>(subscription.Topic, messages.Messages[0]))
             .Returns(new Message<int>(subscription.Topic, 1));
@@ -186,13 +187,13 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
             .Throws(new Exception("Test exception"));
         GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<int>(subscription.Topic, messages.Messages[2]))
             .Returns(new Message<int>(subscription.Topic, 3));
-        GetMock<ISqsClientWrapper>()
+        GetMock<IAmazonSQS>()
             .Setup(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken))
             .Callback<DeleteMessageBatchRequest, CancellationToken>((x, _) => deleteRequest = x);
 
         await ClassUnderTest.GetMessageBatch<int>(subscription, request, x => Task.CompletedTask, cancellationToken);
         
-        GetMock<ISqsClientWrapper>().Verify(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken));
+        GetMock<IAmazonSQS>().Verify(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken));
         Assert.That(deleteRequest!.QueueUrl, Is.EqualTo(request.QueueUrl));
         Assert.That(deleteRequest.Entries.Select(x => x.ReceiptHandle), Is.EqualTo(new [] { "receipt-handle-1", "receipt-handle-3" }));
     }

@@ -1,6 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Runtime.SharedInterfaces;
+using Amazon.SimpleNotificationService;
+using Amazon.SQS;
 using Amazon.SQS.Model;
 using Emmersion.Testing;
 using Moq;
@@ -19,7 +21,7 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
         var cancellationToken = new CancellationToken();
         var getQueueUrlResponse = new GetQueueUrlResponse { QueueUrl = "queue-url" };
         GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
-        GetMock<ISqsClientWrapper>().Setup(x => x.GetQueueUrl(queueName, cancellationToken))
+        GetMock<IAmazonSQS>().Setup(x => x.GetQueueUrlAsync(queueName, cancellationToken))
             .ReturnsAsync(getQueueUrlResponse);
 
         var result = await ClassUnderTest.GetQueueUrlAndCreateIfNecessary(subscription, cancellationToken);
@@ -38,21 +40,20 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
         var queueUrl = "queue-url";
         var createQueueResponse = new CreateQueueResponse { QueueUrl = queueUrl };
         var topicArn = "topic-arn";
-        var sqsClient = GetMock<ICoreAmazonSQS>().Object;
+        var sqsClient = GetMock<IAmazonSQS>().Object;
         GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
-        GetMock<ISqsClientWrapper>().Setup(x => x.GetQueueUrl(queueName, cancellationToken))
+        GetMock<IAmazonSQS>().Setup(x => x.GetQueueUrlAsync(queueName, cancellationToken))
             .ThrowsAsync(new QueueDoesNotExistException("test-exception"));
-        GetMock<ISqsClientWrapper>().Setup(x => x.CreateQueue(IsAny<CreateQueueRequest>(), cancellationToken))
+        GetMock<IAmazonSQS>().Setup(x => x.CreateQueueAsync(IsAny<CreateQueueRequest>(), cancellationToken))
             .Callback<CreateQueueRequest, CancellationToken>((x, _) => createQueueRequest = x)
             .ReturnsAsync(createQueueResponse);
         GetMock<ITopicArnCache>().Setup(x => x.GetTopicArn(environment, subscription.Topic)).ReturnsAsync(topicArn);
-        GetMock<ISqsClientWrapper>().Setup(x => x.Client).Returns(sqsClient);
 
         var result = await ClassUnderTest.GetQueueUrlAndCreateIfNecessary(subscription, cancellationToken);
         
         Assert.That(result, Is.EqualTo(queueUrl));
         Assert.That(createQueueRequest!.QueueName, Is.EqualTo(queueName));
-        GetMock<ISnsClientWrapper>().Verify(x => x.SubscribeQueueAsync(topicArn, sqsClient, queueUrl));
+        GetMock<IAmazonSimpleNotificationService>().Verify(x => x.SubscribeQueueAsync(topicArn, sqsClient, queueUrl));
     }
     
     [Test]

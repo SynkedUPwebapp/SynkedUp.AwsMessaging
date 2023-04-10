@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Amazon.SimpleNotificationService;
 
 namespace SynkedUp.AwsMessaging;
 
@@ -11,14 +12,14 @@ public interface IMessagePublisher
 internal class MessagePublisher : IMessagePublisher
 {
     private readonly IMessageMapper mapper;
-    private readonly ISnsClientWrapper snsClient;
+    private readonly IAmazonSimpleNotificationService snsClient;
     private readonly ITopicArnCache topicArnCache;
     private readonly IPublisherConfig config;
 
     public event OnMessagePublished? OnMessagePublished;
 
     public MessagePublisher(IMessageMapper mapper,
-        ISnsClientWrapper snsClient,
+        IAmazonSimpleNotificationService snsClient,
         ITopicArnCache topicArnCache,
         IPublisherConfig config)
     {
