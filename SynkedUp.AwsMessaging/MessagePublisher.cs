@@ -33,7 +33,7 @@ internal class MessagePublisher : IMessagePublisher
     {
         var stopwatch = Stopwatch.StartNew();
         var topicArn = await topicArnCache.GetTopicArn(config.Environment, message.Topic);
-        var publishRequest = mapper.ToSnsRequest(topicArn, message);
+        var publishRequest = mapper.ToSnsRequest(topicArn, message with { PublishedAt = DateTimeOffset.UtcNow });
         await snsClient.PublishAsync(publishRequest);
         OnMessagePublished?.Invoke(this, new MessagePublishedArgs(stopwatch.ElapsedMilliseconds));
     }

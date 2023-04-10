@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,13 +19,19 @@ internal class MessagePublisherTests : With_an_automocked<MessagePublisher>
         var environment = "env";
         var topicArn = "topic-arn";
         var publishRequest = new PublishRequest();
+        Message<string>? publishedMessage = null;
         GetMock<IPublisherConfig>().Setup(x => x.Environment).Returns(environment);
         GetMock<ITopicArnCache>().Setup(x => x.GetTopicArn(environment, message.Topic)).ReturnsAsync(topicArn);
-        GetMock<IMessageMapper>().Setup(x => x.ToSnsRequest(topicArn, message)).Returns(publishRequest);
+        GetMock<IMessageMapper>().Setup(x => x.ToSnsRequest(topicArn, IsAny<Message<string>>()))
+            .Callback<string, Message<string>>((_, x) => publishedMessage = x)
+            .Returns(publishRequest);
 
         await ClassUnderTest.PublishAsync(message);
         
         GetMock<IAmazonSimpleNotificationService>().Verify(x => x.PublishAsync(publishRequest, IsAny<CancellationToken>()));
+        Assert.That(publishedMessage!.PublishedAt.HasValue, Is.True);
+        Assert.That(publishedMessage.PublishedAt, Is.EqualTo(DateTimeOffset.UtcNow).Within(Seconds(1)));
+        Assert.That(publishedMessage, Is.EqualTo(message with { PublishedAt = publishedMessage.PublishedAt }));
     }
     
     [Test]
