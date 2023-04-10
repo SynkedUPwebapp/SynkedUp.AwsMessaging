@@ -39,22 +39,23 @@ internal class MessageMapper : IMessageMapper
 
     public Message<T> FromSqsMessage<T>(Topic topic, Message sqsMessage)
     {
-        var body = DeserializeMessageBody<T>(topic, sqsMessage);
-        var messageId = GetMessageAttribute(sqsMessage, "MessageId", Guid.NewGuid().ToString());
+        var envelope = Deserialize<SqsMessageEnvelope>(topic, sqsMessage.Body);
+        var body = Deserialize<T>(topic, envelope.Message);
+        var messageId = GetMessageAttribute(envelope, "MessageId", Guid.NewGuid().ToString());
         return new Message<T>(messageId, topic, body!)
         {
-            CorrelationId = GetMessageAttribute(sqsMessage, "CorrelationId", ""),
-            PublishedAt = ParseTimestamp(GetMessageAttribute(sqsMessage, "PublishedAt", "")),
+            CorrelationId = GetMessageAttribute(envelope, "CorrelationId", ""),
+            PublishedAt = ParseTimestamp(GetMessageAttribute(envelope, "PublishedAt", "")),
             ReceivedAt = DateTimeOffset.UtcNow
         };
     }
 
-    private T DeserializeMessageBody<T>(Topic topic, Message sqsMessage)
+    private T Deserialize<T>(Topic topic, string json)
     {
         Exception? innerException = null;
         try
         {
-            var body = serializer.Deserialize<T>(sqsMessage.Body);
+            var body = serializer.Deserialize<T>(json);
             if (body != null)
             {
                 return body;
@@ -65,12 +66,12 @@ internal class MessageMapper : IMessageMapper
             innerException = e;
         }
 
-        throw new Exception($"Error deserializing message on topic {topic}; message body: {sqsMessage.Body}", innerException);
+        throw new Exception($"Error deserializing message on topic {topic}; data: {json}", innerException);
     }
 
-    public string GetMessageAttribute(Message sqsMessage, string key, string defaultValue)
+    private string GetMessageAttribute(SqsMessageEnvelope envelope, string key, string defaultValue)
     {
-        return sqsMessage.MessageAttributes?.GetValueOrDefault(key)?.StringValue ?? defaultValue;
+        return envelope.MessageAttributes?.GetValueOrDefault(key)?.Value ?? defaultValue;
     }
 
     private DateTimeOffset? ParseTimestamp(string? timestamp)
@@ -81,4 +82,15 @@ internal class MessageMapper : IMessageMapper
         }
         return DateTimeOffset.Parse(timestamp);
     }
+}
+
+internal class SqsMessageAttribute
+{
+    public string Value { get; set; } = "";
+}
+
+internal class SqsMessageEnvelope
+{
+    public string Message { get; set; } = "";
+    public Dictionary<string, SqsMessageAttribute>? MessageAttributes { get; set; }
 }

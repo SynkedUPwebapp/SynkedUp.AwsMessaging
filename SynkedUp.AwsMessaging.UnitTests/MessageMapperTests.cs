@@ -60,18 +60,20 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
     public void When_mapping_from_an_sqs_message()
     {
         var topic = new Topic("test", "example", 1);
-        var sqsMessage = new Message
+        var sqsMessage = new Message { Body = "sqs-message-body" };
+        var envelope = new SqsMessageEnvelope
         {
-            Body = "sqs-message-body",
-            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            Message = "envelope-data",
+            MessageAttributes = new Dictionary<string, SqsMessageAttribute>
             {
-                ["MessageId"] = new() { StringValue = "message-id" },
-                ["CorrelationId"] = new() { StringValue = "correlation-id" },
-                ["PublishedAt"] = new() { StringValue = "2023-04-07T01:38:00-0600" }
+                ["MessageId"] = new() { Value = "message-id" },
+                ["CorrelationId"] = new() { Value = "correlation-id" },
+                ["PublishedAt"] = new() { Value = "2023-04-07T01:38:00-0600" }
             }
         };
         var deserialized = new TestData { Data = "test-data" };
-        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<TestData>(sqsMessage.Body)).Returns(deserialized);
+        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<TestData>(envelope.Message)).Returns(deserialized);
+        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<SqsMessageEnvelope>(sqsMessage.Body)).Returns(envelope);
 
         var result = ClassUnderTest.FromSqsMessage<TestData>(topic, sqsMessage);
         
@@ -88,13 +90,15 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
     public void When_mapping_from_an_sqs_message_and_there_are_no_message_attributes()
     {
         var topic = new Topic("test", "example", 1);
-        var sqsMessage = new Message
+        var sqsMessage = new Message { Body = "sqs-message-body" };
+        var envelope = new SqsMessageEnvelope
         {
-            Body = "sqs-message-body",
+            Message = "envelope-data",
             MessageAttributes = null
         };
         var deserialized = new TestData { Data = "test-data" };
-        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<TestData>(sqsMessage.Body)).Returns(deserialized);
+        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<SqsMessageEnvelope>(sqsMessage.Body)).Returns(envelope);
+        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<TestData>(envelope.Message)).Returns(deserialized);
 
         var result = ClassUnderTest.FromSqsMessage<TestData>(topic, sqsMessage);
         
@@ -111,33 +115,25 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
     public void When_mapping_from_an_sqs_message_and_deserialization_returns_null()
     {
         var topic = new Topic("test", "example", 1);
-        var sqsMessage = new Message
-        {
-            Body = "sqs-message-body",
-            MessageAttributes = null
-        };
+        var sqsMessage = new Message { Body = "sqs-message-body" };
         GetMock<IMessageSerializer>().Setup(x => x.Deserialize<TestData>(sqsMessage.Body)).ReturnsNull();
 
         var exception = Assert.Catch(() => ClassUnderTest.FromSqsMessage<TestData>(topic, sqsMessage));
         
-        Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic {topic}; message body: {sqsMessage.Body}"));
+        Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic {topic}; data: {sqsMessage.Body}"));
     }
     
     [Test]
     public void When_mapping_from_an_sqs_message_and_deserialization_throws()
     {
         var topic = new Topic("test", "example", 1);
-        var sqsMessage = new Message
-        {
-            Body = "sqs-message-body",
-            MessageAttributes = null
-        };
+        var sqsMessage = new Message { Body = "sqs-message-body" };
         var deserializationException = new Exception("test-exception");
-        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<TestData>(sqsMessage.Body)).Throws(deserializationException);
+        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<SqsMessageEnvelope>(sqsMessage.Body)).Throws(deserializationException);
 
         var exception = Assert.Catch(() => ClassUnderTest.FromSqsMessage<TestData>(topic, sqsMessage));
         
-        Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic {topic}; message body: {sqsMessage.Body}"));
+        Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic {topic}; data: {sqsMessage.Body}"));
         Assert.That(exception.InnerException, Is.SameAs(deserializationException));
     }
 }
