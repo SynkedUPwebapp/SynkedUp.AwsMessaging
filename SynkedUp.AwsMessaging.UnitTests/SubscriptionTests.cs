@@ -35,7 +35,7 @@ public class SubscriptionTests
         var exception = Assert.Catch(() => { var _ = new Subscription(topic, subscriber, process); });
 
         Assert.That(exception!.Message,
-            Is.EqualTo("Subscriber name must match pattern: " + Topic.Pattern + " (Parameter 'subscriber')"));
+            Is.EqualTo("Subscriber name must match pattern: " + Subscription.Pattern + " (Parameter 'subscriber')"));
     }
 
     [TestCase("job-costing", "")]
@@ -49,7 +49,7 @@ public class SubscriptionTests
         var exception = Assert.Catch(() => { var _ = new Subscription(topic, productContext, process); });
 
         Assert.That(exception!.Message,
-            Is.EqualTo("Process name must match pattern: " + Topic.Pattern + " (Parameter 'process')"));
+            Is.EqualTo("Process name must match pattern: " + Subscription.Pattern + " (Parameter 'process')"));
     }
 
     [Test]
