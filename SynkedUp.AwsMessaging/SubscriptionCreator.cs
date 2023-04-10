@@ -34,7 +34,7 @@ internal class SubscriptionCreator : ISubscriptionCreator
             throw new Exception($"Environment {config.Environment} must not exceed {EnvironmentRestrictions.MaxLength} characters");
         }
         
-        var queueName = $"{config.Environment}:{subscription}";
+        var queueName = $"{config.Environment}_{subscription}";
         try
         {
             var response = await sqsClient.GetQueueUrlAsync(queueName, cancellationToken);

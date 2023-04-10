@@ -11,7 +11,7 @@ public class TestMessageBuilderTests
         var message = new TestMessageBuilder<int>().Build(13);
 
         Assert.That(message.Body, Is.EqualTo(13));
-        Assert.That(message.Topic.ToString(), Is.EqualTo("example.test-event.v1"));
+        Assert.That(message.Topic.ToString(), Is.EqualTo("example_test-event_v1"));
         Assert.That(message.MessageId, Is.Not.Null);
         Assert.That(message.CorrelationId, Is.Empty);
         Assert.That(message.PublishedAt, Is.Null);

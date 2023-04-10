@@ -9,7 +9,7 @@ public class Subscription
     readonly string fullName;
     internal static string Pattern = "^[a-z]+[a-z-]*[a-z]+$";
     private static Regex regex = new(Pattern, RegexOptions.Compiled);
-    private const int SubscriptionNameMaximumLength = 37;
+    private const int SubscriptionNameMaximumLength = 36;
 
     public Subscription(Topic topic, string subscriber, string process)
     {
@@ -27,8 +27,8 @@ public class Subscription
         }
             
         Topic = topic;
-        SubscriptionName = $"{subscriber}.{process}";
-        fullName = $"{Topic}=>{SubscriptionName}";
+        SubscriptionName = $"{subscriber}_{process}";
+        fullName = $"{Topic}_{SubscriptionName}";
             
         if (SubscriptionName.Length > SubscriptionNameMaximumLength) {
             throw new Exception($"The subscription name '{SubscriptionName}' exceeds the {SubscriptionNameMaximumLength} character limit");

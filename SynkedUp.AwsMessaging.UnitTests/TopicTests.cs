@@ -12,7 +12,7 @@ public class TopicTests
     {
         var topic = new Topic(publisher, eventName, version);
 
-        Assert.That(topic.ToString(), Is.EqualTo($"{publisher}.{eventName}.v{version}"));
+        Assert.That(topic.ToString(), Is.EqualTo($"{publisher}_{eventName}_v{version}"));
     }
 
     [TestCase("Monolith", "test-event", 1)]
@@ -59,7 +59,7 @@ public class TopicTests
             eventName,
             version));
 
-        var expected = $"The topic name '{publisher}.{eventName}.v{version}' exceeds the 37 character limit";
+        var expected = $"The topic name '{publisher}_{eventName}_v{version}' exceeds the 36 character limit";
         Assert.That(exception!.Message, Is.EqualTo(expected));
     }
 }

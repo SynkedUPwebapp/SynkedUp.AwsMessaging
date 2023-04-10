@@ -12,8 +12,8 @@ public class SubscriptionTests
         var subscription = new Subscription(topic, productContext, process);
 
         Assert.That(subscription.Topic, Is.SameAs(topic));
-        Assert.That(subscription.SubscriptionName, Is.EqualTo($"{productContext}.{process}"));
-        Assert.That(subscription.ToString(), Is.EqualTo($"{topic}=>{subscription.SubscriptionName}"));
+        Assert.That(subscription.SubscriptionName, Is.EqualTo($"{productContext}_{process}"));
+        Assert.That(subscription.ToString(), Is.EqualTo($"{topic}_{subscription.SubscriptionName}"));
     }
 
     [Test]
@@ -61,7 +61,7 @@ public class SubscriptionTests
 
         var exception = Assert.Catch(() => { var _ = new Subscription(topic, productContext, process); });
 
-        var expected = $"The subscription name '{productContext}.{process}' exceeds the 37 character limit";
+        var expected = $"The subscription name '{productContext}_{process}' exceeds the 36 character limit";
         Assert.That(exception!.Message, Is.EqualTo(expected));
     }
 }

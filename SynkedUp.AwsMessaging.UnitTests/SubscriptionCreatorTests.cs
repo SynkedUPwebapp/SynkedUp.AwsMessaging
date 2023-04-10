@@ -1,6 +1,5 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.Runtime.SharedInterfaces;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using Amazon.SQS.Model;
@@ -17,7 +16,7 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
     {
         var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");
         var environment = "env";
-        var queueName = $"{environment}:{subscription}";
+        var queueName = $"{environment}_{subscription}";
         var cancellationToken = new CancellationToken();
         var getQueueUrlResponse = new GetQueueUrlResponse { QueueUrl = "queue-url" };
         GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
@@ -34,7 +33,7 @@ internal class SubscriptionCreatorTests : With_an_automocked<SubscriptionCreator
     {
         var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");
         var environment = "env";
-        var queueName = $"{environment}:{subscription}";
+        var queueName = $"{environment}_{subscription}";
         var cancellationToken = new CancellationToken();
         CreateQueueRequest? createQueueRequest = null;
         var queueUrl = "queue-url";

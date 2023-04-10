@@ -7,7 +7,7 @@ public class Topic
     private readonly string fullName;
     internal static string Pattern = "^[a-z]+[a-z-]*[a-z]+$";
     private static Regex regex = new(Pattern, RegexOptions.Compiled);
-    private const int TopicNameMaximumLength = 37;
+    private const int TopicNameMaximumLength = 36;
 
     public Topic(string publisher, string eventName, int version)
     {
@@ -24,7 +24,7 @@ public class Topic
             throw new ArgumentException("Version may not be negative", nameof(version));
         }
 
-        fullName = $"{publisher}.{eventName}.v{version}";
+        fullName = $"{publisher}_{eventName}_v{version}";
             
         if (fullName.Length > TopicNameMaximumLength) {
             throw new Exception($"The topic name '{fullName}' exceeds the {TopicNameMaximumLength} character limit");
