@@ -10,7 +10,7 @@ internal interface ISqsClientWrapper
     Task<GetQueueUrlResponse> GetQueueUrl(string queueName, CancellationToken cancellationToken);
     Task<ReceiveMessageResponse> ReceiveMessagesAsync(ReceiveMessageRequest request, CancellationToken cancellationToken);
     ICoreAmazonSQS Client { get; }
-    Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken);
+    Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken);
 }
 
 internal class SqsClientWrapper : ISqsClientWrapper
@@ -37,9 +37,9 @@ internal class SqsClientWrapper : ISqsClientWrapper
         return await client.ReceiveMessageAsync(request, cancellationToken);
     }
 
-    public async Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken)
+    public async Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken)
     {
-        return await client.DeleteMessageAsync(request, cancellationToken);
+        return await client.DeleteMessageBatchAsync(request, cancellationToken);
     }
 
     public ICoreAmazonSQS Client => client;

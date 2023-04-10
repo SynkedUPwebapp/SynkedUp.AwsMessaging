@@ -55,12 +55,29 @@ internal class MessageSubscriber : IMessageSubscriber, IDisposable
 #pragma warning restore CS4014
     }
 
-    private async Task GetMessageBatch<T>(Subscription subscription, ReceiveMessageRequest request, Func<Message<T>, Task> messageHandler, CancellationToken cancellationToken)
+    public async Task GetMessageBatch<T>(Subscription subscription, ReceiveMessageRequest request, Func<Message<T>, Task> messageHandler, CancellationToken cancellationToken)
     {
         var response = await sqsClient.ReceiveMessagesAsync(request, cancellationToken);
+        var batchDeleteRequest = new DeleteMessageBatchRequest
+        {
+            QueueUrl = request.QueueUrl,
+            Entries = new List<DeleteMessageBatchRequestEntry>()
+        };
         foreach (var sqsMessage in response.Messages)
         {
-            await ProcessMessage(subscription, sqsMessage, messageHandler);
+            if (await ProcessMessage(subscription, sqsMessage, messageHandler))
+            {
+                batchDeleteRequest.Entries.Add(new DeleteMessageBatchRequestEntry
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    ReceiptHandle = sqsMessage.ReceiptHandle
+                });
+            }
+        }
+
+        if (batchDeleteRequest.Entries.Any())
+        {
+            await sqsClient.DeleteMessageBatchAsync(batchDeleteRequest, cancellationToken);
         }
     }
 

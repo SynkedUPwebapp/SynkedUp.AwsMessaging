@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
@@ -52,11 +53,12 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         });
         
         GetMock<ISubscriptionCreator>().Verify(x => x.GetQueueUrlAndCreateIfNecessary(subscription, IsAny<CancellationToken>()));
+        
+        await Task.Delay(100);
+        
         Assert.That(request!.QueueUrl, Is.EqualTo(queueUrl));
         Assert.That(request.MaxNumberOfMessages, Is.EqualTo(maxNumberOfMessages));
         Assert.That(request.WaitTimeSeconds, Is.EqualTo(waitTimeSeconds));
-        
-        await Task.Delay(100);
         
         Assert.That(messagesReceived.Count, Is.GreaterThanOrEqualTo(3));
         Assert.That(messagesReceived[0].Body.Data, Is.EqualTo("m1"));
@@ -155,5 +157,46 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         Assert.That(receivedArgs.PublishedAt, Is.EqualTo(mapped.PublishedAt));
         Assert.That(receivedArgs.ReceivedAt, Is.EqualTo(mapped.ReceivedAt));
         Assert.That(receivedArgs.ProcessingTime, Is.GreaterThan(TimeSpan.Zero));
+    }
+
+    [Test]
+    public async Task When_getting_a_message_batch()
+    {
+        var subscription = new Subscription(new Topic("test", "example", 1), "test", "listener");
+        var request = new ReceiveMessageRequest
+        {
+            QueueUrl = "queue-url"
+        };
+        var cancellationToken = new CancellationToken();
+        var messages = new ReceiveMessageResponse()
+        {
+            Messages = new List<Message>()
+            {
+                new() { ReceiptHandle = "receipt-handle-1" },
+                new() { ReceiptHandle = "receipt-handle-2" },
+                new() { ReceiptHandle = "receipt-handle-3" }
+            }
+        };
+        DeleteMessageBatchRequest? deleteRequest = null;
+        GetMock<ISqsClientWrapper>().Setup(x => x.ReceiveMessagesAsync(request, cancellationToken))
+            .ReturnsAsync(messages);
+        GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<int>(subscription.Topic, messages.Messages[0]))
+            .Returns(new Message<int>(subscription.Topic, 1));
+        GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<int>(subscription.Topic, messages.Messages[1]))
+            .Throws(new Exception("Test exception"));
+        GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<int>(subscription.Topic, messages.Messages[2]))
+            .Returns(new Message<int>(subscription.Topic, 3));
+        GetMock<ISqsClientWrapper>()
+            .Setup(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken))
+            .Callback<DeleteMessageBatchRequest, CancellationToken>((x, _) => deleteRequest = x);
+
+        await ClassUnderTest.GetMessageBatch<int>(subscription, request, x =>
+        {
+            return Task.CompletedTask;
+        }, cancellationToken);
+        
+        GetMock<ISqsClientWrapper>().Verify(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken));
+        Assert.That(deleteRequest!.QueueUrl, Is.EqualTo(request.QueueUrl));
+        Assert.That(deleteRequest.Entries.Select(x => x.ReceiptHandle), Is.EqualTo(new [] { "receipt-handle-1", "receipt-handle-3" }));
     }
 }
