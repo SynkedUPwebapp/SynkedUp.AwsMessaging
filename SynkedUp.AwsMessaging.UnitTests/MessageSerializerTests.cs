@@ -29,7 +29,7 @@ internal class MessageSerializerTests : With_an_automocked<MessageSerializer>
         Assert.That(deserialized!.IntData, Is.EqualTo(original.IntData));
         Assert.That(deserialized.StringData, Is.EqualTo(original.StringData));
         Assert.That(deserialized.TemporalData, Is.EqualTo(original.TemporalData));
-        Assert.That(deserialized.GenericData.IntData, Is.EqualTo(original.GenericData.IntData));
+        Assert.That(deserialized.GenericData!.IntData, Is.EqualTo(original.GenericData.IntData));
         Assert.That(deserialized.GenericData.StringData, Is.EqualTo(original.GenericData.StringData));
         Assert.That(deserialized.GenericData.TemporalData, Is.EqualTo(original.GenericData.TemporalData));
         Assert.That(deserialized.GenericData.GenericData, Is.EqualTo(original.GenericData.GenericData));
@@ -70,8 +70,8 @@ internal class MessageSerializerTests : With_an_automocked<MessageSerializer>
 
 internal class SerializationTest<T>
 {
-    public int IntData { get; set; }
-    public string StringData { get; set; } = "";
-    public DateTimeOffset TemporalData { get; set; }
-    public T GenericData { get; init; }
+    public int IntData { get; init; }
+    public string StringData { get; init; } = "";
+    public DateTimeOffset TemporalData { get; init; }
+    public T? GenericData { get; init; }
 }
