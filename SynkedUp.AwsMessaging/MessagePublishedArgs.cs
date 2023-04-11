@@ -4,10 +4,10 @@ public delegate void OnMessagePublished(object source, MessagePublishedArgs e);
 
 public class MessagePublishedArgs : EventArgs
 {
-    public MessagePublishedArgs(long elapsedMilliseconds)
+    public MessagePublishedArgs(TimeSpan elapsed)
     {
-        ElapsedMilliseconds = elapsedMilliseconds;
+        Elapsed = elapsed;
     }
 
-    public long ElapsedMilliseconds { get; }
+    public TimeSpan Elapsed { get; }
 }

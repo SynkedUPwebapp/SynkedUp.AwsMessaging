@@ -57,7 +57,7 @@ internal class MessagePublisherTests : With_an_automocked<MessagePublisher>
         await ClassUnderTest.PublishAsync(message);
 
         Assert.That(receivedTimings.Count, Is.EqualTo(1));
-        Assert.That(receivedTimings[0].ElapsedMilliseconds, Is.GreaterThanOrEqualTo(100));
-        Assert.That(receivedTimings[0].ElapsedMilliseconds, Is.LessThan(1000));
+        Assert.That(receivedTimings[0].Elapsed, Is.GreaterThanOrEqualTo(TimeSpan.FromMilliseconds(100)));
+        Assert.That(receivedTimings[0].Elapsed, Is.LessThan(TimeSpan.FromMilliseconds(1000)));
     }
 }
