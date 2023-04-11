@@ -4,7 +4,18 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+
+        <Company>SynkedUP</Company>
+        <Description>A library to make it easy to do pub-sub in AWS with SNS and SQS according to SynkedUP conventions.</Description>
+        <Copyright>Copyright (c) 2023 SynkedUP</Copyright>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageProjectUrl>https://github.com/SynkedUPwebapp/SynkedUp.AwsMessaging</PackageProjectUrl>
+        <PackageTags>pubsub;AWS;SNS;SQS;messaging</PackageTags>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../LICENSE" Pack="true" PackagePath="" />
+    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.5" />

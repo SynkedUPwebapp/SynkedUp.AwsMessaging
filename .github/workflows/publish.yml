@@ -1,0 +1,27 @@
+name: Publish to NuGet
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: 'Run Unit Tests'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v1
+
+      - name: Setup Dotnet
+        uses: actions/setup-dotnet@v3
+
+      - name: Run Unit Tests
+        working-directory: SynkedUp.AwsMessaging.UnitTests
+        run: dotnet test
+      
+      - name: Pack
+        working-directory: SynkedUp.AwsMessaging
+        run: 'dotnet pack -p:1.0.${{ github.run_number }}'
+        
+      - name: Publish
+        working-directory: SynkedUp.AwsMessaging
+        run: 'dotnet nuget push "*.nupkg" -k ${{ secrets.NUGET_API_KEY }}'
