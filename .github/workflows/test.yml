@@ -1,0 +1,23 @@
+name: UnitTest
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - .github/**
+      - README.md
+  workflow_dispatch:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    name: 'Run Unit Tests'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v1
+
+      - name: Docker Build
+        uses: actions/setup-dotnet@v3
+        working-directory: SynkedUp.AwsMessaging.UnitTests
+        run: dotnet test
