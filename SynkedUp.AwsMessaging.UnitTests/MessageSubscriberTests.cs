@@ -163,7 +163,6 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
     [Test]
     public async Task When_getting_a_message_batch()
     {
-        var subscription = new Subscription(new Topic("test", "example", 1), "test", "listener");
         var request = new ReceiveMessageRequest
         {
             QueueUrl = "queue-url"
@@ -171,7 +170,7 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         var cancellationToken = new CancellationToken();
         var messages = new ReceiveMessageResponse()
         {
-            Messages = new List<Message>()
+            Messages = new List<Message>
             {
                 new() { ReceiptHandle = "receipt-handle-1" },
                 new() { ReceiptHandle = "receipt-handle-2" },
@@ -181,17 +180,11 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         DeleteMessageBatchRequest? deleteRequest = null;
         GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(request, cancellationToken))
             .ReturnsAsync(messages);
-        GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<int>(subscription.Topic, messages.Messages[0]))
-            .Returns(new Message<int>(subscription.Topic, 1));
-        GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<int>(subscription.Topic, messages.Messages[1]))
-            .Throws(new Exception("Test exception"));
-        GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<int>(subscription.Topic, messages.Messages[2]))
-            .Returns(new Message<int>(subscription.Topic, 3));
         GetMock<IAmazonSQS>()
             .Setup(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken))
             .Callback<DeleteMessageBatchRequest, CancellationToken>((x, _) => deleteRequest = x);
 
-        await ClassUnderTest.GetMessageBatch<int>(subscription, request, x => Task.CompletedTask, cancellationToken);
+        await ClassUnderTest.GetMessageBatch(request, x => Task.FromResult(x.ReceiptHandle != "receipt-handle-2"), cancellationToken);
         
         GetMock<IAmazonSQS>().Verify(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), cancellationToken));
         Assert.That(deleteRequest!.QueueUrl, Is.EqualTo(request.QueueUrl));
@@ -203,14 +196,14 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
     {
         var subscription = new Subscription(new Topic("test", "event", 1), "test", "listener");
         var queueUrl = "queue-url";
-        var messagesReceived = new List<Message<TestData>>();
+        var messagesReceived = new List<string>();
         var messagesResponse = new ReceiveMessageResponse
         {
             Messages = new List<Message>
             {
-                new(),
-                new(),
-                new()
+                new() { Body = "body-1" },
+                new() { Body = "body-2" },
+                new() { Body = "body-3" }
             }
         };
         ReceiveMessageRequest? request = null;
@@ -227,12 +220,8 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
                 await Task.Delay(50);
                 return messagesResponse;
             });
-        GetMock<IMessageMapper>().SetupSequence(x => x.FromSqsMessage<TestData>(subscription.Topic, IsAny<Message>()))
-            .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m1" }))
-            .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m2" }))
-            .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m3" }));
 
-        await ClassUnderTest.SubscribeToDeadLettersAsync<TestData>(subscription, message =>
+        await ClassUnderTest.SubscribeToDeadLettersAsync(subscription, message =>
         {
             messagesReceived.Add(message);
             return Task.CompletedTask;
@@ -247,8 +236,8 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         Assert.That(request.WaitTimeSeconds, Is.EqualTo(waitTimeSeconds));
         
         Assert.That(messagesReceived.Count, Is.GreaterThanOrEqualTo(3));
-        Assert.That(messagesReceived[0].Body.Data, Is.EqualTo("m1"));
-        Assert.That(messagesReceived[1].Body.Data, Is.EqualTo("m2"));
-        Assert.That(messagesReceived[2].Body.Data, Is.EqualTo("m3"));
+        Assert.That(messagesReceived[0], Is.EqualTo("body-1"));
+        Assert.That(messagesReceived[1], Is.EqualTo("body-2"));
+        Assert.That(messagesReceived[2], Is.EqualTo("body-3"));
     }
 }

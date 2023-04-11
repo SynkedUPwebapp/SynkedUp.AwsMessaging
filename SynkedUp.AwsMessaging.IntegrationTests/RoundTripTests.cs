@@ -89,17 +89,17 @@ public class RoundTripTests
         
         Assert.That(receivedMessageIds.Where(x => x == message.MessageId).Count, Is.EqualTo(5));
 
-        var deadLetterMessageIds = new ConcurrentQueue<string>();
-        await subscriber.SubscribeToDeadLettersAsync<TestData>(subscription, x =>
+        var deadLetterMessages = new ConcurrentQueue<string>();
+        await subscriber.SubscribeToDeadLettersAsync(subscription, x =>
         {
-            deadLetterMessageIds.Enqueue(x.MessageId);
+            deadLetterMessages.Enqueue(x);
             return Task.CompletedTask;
         });
         
         await Task.Delay(2000);
         
-        Assert.That(deadLetterMessageIds.Count, Is.GreaterThan(0));
-        Assert.That(deadLetterMessageIds, Does.Contain(message.MessageId));
+        Assert.That(deadLetterMessages.Count, Is.GreaterThan(0));
+        Assert.That(deadLetterMessages.Any(x => x.Contains(message.MessageId)), Is.True);
         
         subscriber.Dispose();
     }

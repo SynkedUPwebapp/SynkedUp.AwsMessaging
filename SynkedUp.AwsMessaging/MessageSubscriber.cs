@@ -7,7 +7,7 @@ namespace SynkedUp.AwsMessaging;
 public interface IMessageSubscriber : IDisposable
 {
     Task SubscribeAsync<T>(Subscription subscription, Func<Message<T>, Task> messageHandler);
-    Task SubscribeToDeadLettersAsync<T>(Subscription subscription, Func<Message<T>, Task> messageHandler);
+    Task SubscribeToDeadLettersAsync(Subscription subscription, Func<string, Task> messageHandler);
     event OnMessageReceived? OnMessageReceived;
     event OnException? OnException;
 }
@@ -51,13 +51,13 @@ internal class MessageSubscriber : IMessageSubscriber
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await GetMessageBatch(subscription, request, messageHandler, cancellationToken);
+                await GetMessageBatch(request, x => ProcessMessage(subscription, x, messageHandler), cancellationToken);
             }
         }, cancellationTokenSource.Token);
 #pragma warning restore CS4014
     }
     
-    public async Task SubscribeToDeadLettersAsync<T>(Subscription subscription, Func<Message<T>, Task> messageHandler)
+    public async Task SubscribeToDeadLettersAsync(Subscription subscription, Func<string, Task> messageHandler)
     {
         var cancellationToken = cancellationTokenSource.Token;
         var queueUrl = await queueUrlRetriever.GetDeadLetterQueueUrl(subscription, cancellationToken);
@@ -73,13 +73,13 @@ internal class MessageSubscriber : IMessageSubscriber
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await GetMessageBatch(subscription, request, messageHandler, cancellationToken);
+                await GetMessageBatch(request, x => ProcessDeadLetterMessage(x, messageHandler), cancellationToken);
             }
         }, cancellationTokenSource.Token);
 #pragma warning restore CS4014
     }
 
-    public async Task GetMessageBatch<T>(Subscription subscription, ReceiveMessageRequest request, Func<Message<T>, Task> messageHandler, CancellationToken cancellationToken)
+    public async Task GetMessageBatch(ReceiveMessageRequest request, Func<Message, Task<bool>> messageProcessor, CancellationToken cancellationToken)
     {
         var response = await sqsClient.ReceiveMessageAsync(request, cancellationToken);
         var batchDeleteRequest = new DeleteMessageBatchRequest
@@ -89,7 +89,7 @@ internal class MessageSubscriber : IMessageSubscriber
         };
         foreach (var sqsMessage in response.Messages)
         {
-            if (await ProcessMessage(subscription, sqsMessage, messageHandler))
+            if (await messageProcessor(sqsMessage))
             {
                 batchDeleteRequest.Entries.Add(new DeleteMessageBatchRequestEntry
                 {
@@ -127,6 +127,19 @@ internal class MessageSubscriber : IMessageSubscriber
         finally
         {
             OnMessageReceived?.Invoke(this, new MessageReceivedArgs(subscription, publishedAt, receivedAt, stopwatch.Elapsed));    
+        }
+    }
+    
+    public async Task<bool> ProcessDeadLetterMessage(Message sqsMessage, Func<string, Task> messageHandler)
+    {
+        try
+        {
+            await messageHandler(sqsMessage.Body);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 
