@@ -41,10 +41,10 @@ internal class QueueUrlRetriever : IQueueUrlRetriever
         }
         catch (QueueDoesNotExistException)
         {
+            var topicArn = await topicArnCache.GetTopicArn(config.Environment, subscription.Topic);
             var deadLetterQueueName = subscription.EnvironmentDeadLetterName(config.Environment);
             var deadLetterQueueArn = await queueCreator.CreateDeadLetterQueue(deadLetterQueueName, cancellationToken);
             var queueUrl = await queueCreator.CreateQueue(queueName, deadLetterQueueArn, cancellationToken);
-            var topicArn = await topicArnCache.GetTopicArn(config.Environment, subscription.Topic);
             await snsClient.SubscribeQueueAsync(topicArn, sqsClient, queueUrl);
             return queueUrl;
         }
