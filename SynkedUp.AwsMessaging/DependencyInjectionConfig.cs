@@ -10,7 +10,7 @@ namespace SynkedUp.AwsMessaging;
 
 public class DependencyInjectionConfig
 {
-    public static void ConfigurePublisherServices(ServiceCollection services)
+    public static void ConfigurePublisherServices(IServiceCollection services)
     {
         services.AddSingleton<IMessagePublisher, MessagePublisher>();
 
