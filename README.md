@@ -81,7 +81,7 @@ Subscribe to messages from a specific queue by using an injected `IMessageSubscr
 ```csharp
 var topic = new Topic("monolith", "customer-updated", 1);
 var subscription = new Subscription(topic, "monolith", "listener");
-await subscriber.SubscribeAsync(subscription, async (Message<CustomerUpdated> message) =>
+await subscriber.SubscribeAsync(subscription, cancellationToken, async (Message<CustomerUpdated> message) =>
 {
     await DoSomethingWith(message);
 });
@@ -90,12 +90,14 @@ await subscriber.SubscribeAsync(subscription, async (Message<CustomerUpdated> me
 The call to `SubscribeAsync` will fail if the SNS topic does not exist.
 If the SQS queue does not exist, it will be created along with a corresponding dead-letter queue.
 
+Messages will continue to be received until the cancellationToken is marked canceled.
+
 ### Reading from Dead-Letter Queues
 
 You can also subscribe to messages from a dead-letter queue:
 
 ```csharp
-await subscriber.SubscribeToDeadLettersAsync(subscription, async (string message) =>
+await subscriber.SubscribeToDeadLettersAsync(subscription, cancellationToken, async (string message) =>
 {
     await DoSomethingWith(message);
 });

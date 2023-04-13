@@ -42,8 +42,9 @@ public class RoundTripTests
             StringData = "hello world"
         });
         var receivedMessageIds = new ConcurrentQueue<string>();
+        var cancellationTokenSource = new CancellationTokenSource();
 
-        await subscriber.SubscribeAsync<TestData>(subscription, x =>
+        await subscriber.SubscribeAsync<TestData>(subscription, cancellationTokenSource.Token, x =>
         {
             receivedMessageIds.Enqueue(x.MessageId);
             return Task.CompletedTask;
@@ -52,7 +53,7 @@ public class RoundTripTests
         await publisher.PublishAsync(message);
 
         await Task.Delay(5000);
-        subscriber.Dispose();
+        cancellationTokenSource.Cancel();
         
         Assert.That(receivedMessageIds.Count, Is.GreaterThan(0));
         Assert.That(receivedMessageIds, Does.Contain(message.MessageId));
@@ -69,8 +70,9 @@ public class RoundTripTests
             StringData = "this message should dead-letter"
         });
         var receivedMessageIds = new ConcurrentQueue<string>();
+        var cancellationTokenSource = new CancellationTokenSource();
 
-        await subscriber.SubscribeAsync<TestData>(subscription, x =>
+        await subscriber.SubscribeAsync<TestData>(subscription, cancellationTokenSource.Token, x =>
         {
             receivedMessageIds.Enqueue(x.MessageId);
             throw new Exception("If we cannot process the message then it should dead-letter");
@@ -90,17 +92,16 @@ public class RoundTripTests
         Assert.That(receivedMessageIds.Where(x => x == message.MessageId).Count, Is.EqualTo(5));
 
         var deadLetterMessages = new ConcurrentQueue<string>();
-        await subscriber.SubscribeToDeadLettersAsync(subscription, x =>
+        await subscriber.SubscribeToDeadLettersAsync(subscription, cancellationTokenSource.Token, x =>
         {
             deadLetterMessages.Enqueue(x);
             return Task.CompletedTask;
         });
-        
+
         await Task.Delay(2000);
+        cancellationTokenSource.Cancel();
         
         Assert.That(deadLetterMessages.Count, Is.GreaterThan(0));
         Assert.That(deadLetterMessages.Any(x => x.Contains(message.MessageId)), Is.True);
-        
-        subscriber.Dispose();
     }
 }

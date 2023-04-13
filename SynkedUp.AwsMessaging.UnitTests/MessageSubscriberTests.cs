@@ -31,11 +31,12 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         ReceiveMessageRequest? request = null;
         var maxNumberOfMessages = 10;
         var waitTimeSeconds = 20;
-        GetMock<IQueueUrlRetriever>().Setup(x => x.GetQueueUrlAndCreateIfNecessary(subscription, IsAny<CancellationToken>()))
+        var cancellationTokenSource = new CancellationTokenSource();
+        GetMock<IQueueUrlRetriever>().Setup(x => x.GetQueueUrlAndCreateIfNecessary(subscription, cancellationTokenSource.Token))
             .ReturnsAsync(queueUrl);
         GetMock<ISubscriberConfig>().Setup(x => x.MaxNumberOfMessages).Returns(maxNumberOfMessages);
         GetMock<ISubscriberConfig>().Setup(x => x.LongPollingSeconds).Returns(waitTimeSeconds);
-        GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(IsAny<ReceiveMessageRequest>(), IsAny<CancellationToken>()))
+        GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(IsAny<ReceiveMessageRequest>(), cancellationTokenSource.Token))
             .Callback<ReceiveMessageRequest, CancellationToken>((x, _) => request = x)
             .Returns(async () =>
             {
@@ -47,13 +48,13 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
             .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m2" }))
             .Returns(new Message<TestData>(subscription.Topic, new TestData { Data = "m3" }));
 
-        await ClassUnderTest.SubscribeAsync<TestData>(subscription, message =>
+        await ClassUnderTest.SubscribeAsync<TestData>(subscription, cancellationTokenSource.Token, message =>
         {
             messagesReceived.Add(message);
             return Task.CompletedTask;
         });
         
-        GetMock<IQueueUrlRetriever>().Verify(x => x.GetQueueUrlAndCreateIfNecessary(subscription, IsAny<CancellationToken>()));
+        GetMock<IQueueUrlRetriever>().Verify(x => x.GetQueueUrlAndCreateIfNecessary(subscription, cancellationTokenSource.Token));
         
         await Task.Delay(100);
         
@@ -65,6 +66,8 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         Assert.That(messagesReceived[0].Body.Data, Is.EqualTo("m1"));
         Assert.That(messagesReceived[1].Body.Data, Is.EqualTo("m2"));
         Assert.That(messagesReceived[2].Body.Data, Is.EqualTo("m3"));
+        
+        cancellationTokenSource.Cancel();
     }
 
     [Test]
@@ -209,11 +212,12 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         ReceiveMessageRequest? request = null;
         var maxNumberOfMessages = 10;
         var waitTimeSeconds = 20;
-        GetMock<IQueueUrlRetriever>().Setup(x => x.GetDeadLetterQueueUrl(subscription, IsAny<CancellationToken>()))
+        var cancellationTokenSource = new CancellationTokenSource();
+        GetMock<IQueueUrlRetriever>().Setup(x => x.GetDeadLetterQueueUrl(subscription, cancellationTokenSource.Token))
             .ReturnsAsync(queueUrl);
         GetMock<ISubscriberConfig>().Setup(x => x.MaxNumberOfMessages).Returns(maxNumberOfMessages);
         GetMock<ISubscriberConfig>().Setup(x => x.LongPollingSeconds).Returns(waitTimeSeconds);
-        GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(IsAny<ReceiveMessageRequest>(), IsAny<CancellationToken>()))
+        GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(IsAny<ReceiveMessageRequest>(), cancellationTokenSource.Token))
             .Callback<ReceiveMessageRequest, CancellationToken>((x, _) => request = x)
             .Returns(async () =>
             {
@@ -221,13 +225,13 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
                 return messagesResponse;
             });
 
-        await ClassUnderTest.SubscribeToDeadLettersAsync(subscription, message =>
+        await ClassUnderTest.SubscribeToDeadLettersAsync(subscription, cancellationTokenSource.Token, message =>
         {
             messagesReceived.Add(message);
             return Task.CompletedTask;
         });
         
-        GetMock<IQueueUrlRetriever>().Verify(x => x.GetDeadLetterQueueUrl(subscription, IsAny<CancellationToken>()));
+        GetMock<IQueueUrlRetriever>().Verify(x => x.GetDeadLetterQueueUrl(subscription, cancellationTokenSource.Token));
         
         await Task.Delay(100);
         
@@ -239,5 +243,7 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         Assert.That(messagesReceived[0], Is.EqualTo("body-1"));
         Assert.That(messagesReceived[1], Is.EqualTo("body-2"));
         Assert.That(messagesReceived[2], Is.EqualTo("body-3"));
+        
+        cancellationTokenSource.Cancel();
     }
 }
