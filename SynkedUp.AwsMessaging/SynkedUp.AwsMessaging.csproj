@@ -9,12 +9,14 @@
         <Description>A library to make it easy to do pub-sub in AWS with SNS and SQS according to SynkedUP conventions.</Description>
         <Copyright>Copyright (c) 2023 SynkedUP</Copyright>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageProjectUrl>https://github.com/SynkedUPwebapp/SynkedUp.AwsMessaging</PackageProjectUrl>
         <PackageTags>pubsub;AWS;SNS;SQS;messaging</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>
         <None Include="../LICENSE" Pack="true" PackagePath="" />
+        <None Include="../README.md" Pack="true" PackagePath="" />
     </ItemGroup>
 
     <ItemGroup>
