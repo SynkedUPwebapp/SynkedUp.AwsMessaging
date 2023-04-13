@@ -39,7 +39,6 @@ internal class QueueUrlRetrieverTests : With_an_automocked<QueueUrlRetriever>
         var deadLetterQueueArn = "dead-letter-queue-arn";
         var queueUrl = "queue-url";
         var topicArn = "topic-arn";
-        var sqsClient = GetMock<IAmazonSQS>().Object;
         GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
         GetMock<IAmazonSQS>().Setup(x => x.GetQueueUrlAsync(queueName, cancellationToken))
             .ThrowsAsync(new QueueDoesNotExistException("test-exception"));
@@ -52,7 +51,7 @@ internal class QueueUrlRetrieverTests : With_an_automocked<QueueUrlRetriever>
         var result = await ClassUnderTest.GetQueueUrlAndCreateIfNecessary(subscription, cancellationToken);
         
         Assert.That(result, Is.EqualTo(queueUrl));
-        GetMock<IAmazonSimpleNotificationService>().Verify(x => x.SubscribeQueueAsync(topicArn, sqsClient, queueUrl));
+        GetMock<IRetryingTopicSubscriber>().Verify(x => x.SubscribeToTopic(topicArn, queueUrl));
     }
     
     [Test]

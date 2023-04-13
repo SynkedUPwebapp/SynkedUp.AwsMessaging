@@ -25,11 +25,13 @@ public class DependencyInjectionConfig
     {
         services.AddSingleton<IMessageSubscriber, MessageSubscriber>();
 
+        services.AddTransient<IDelayer, Delayer>();
         services.AddTransient<IMessageMapper, MessageMapper>();
         services.AddTransient<IMessageSerializer, MessageSerializer>();
         services.AddTransient<IQueueUrlRetriever, QueueUrlRetriever>();
-        services.AddTransient<ITopicArnCache, TopicArnCache>();
         services.AddTransient<IQueueCreator, QueueCreator>();
+        services.AddTransient<IRetryingTopicSubscriber, RetryingTopicSubscriber>();
+        services.AddTransient<ITopicArnCache, TopicArnCache>();
 
         services.AddAWSService<IAmazonSQS>();
         services.AddAWSService<IAmazonSimpleNotificationService>();
