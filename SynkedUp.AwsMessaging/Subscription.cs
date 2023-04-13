@@ -42,7 +42,7 @@ public class Subscription
         return $"{Topic.EnvironmentName(environment)}_{SubscriptionName}";
     }
 
-    public string EnvironmentDeadLetterName(string environment)
+    internal string EnvironmentDeadLetterName(string environment)
     {
         return $"{EnvironmentName(environment)}_dl";
     }

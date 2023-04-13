@@ -33,9 +33,7 @@ internal class RetryingTopicSubscriber : IRetryingTopicSubscriber
     {
         try
         {
-            Console.WriteLine($"Attempt {attempt} to create subscription to topicArn {topicArn}");
             await snsClient.SubscribeQueueAsync(topicArn, sqsClient, queueUrl);
-            Console.WriteLine($"Succeeded on attempt {attempt}");
         }
         catch (Exception)
         {
