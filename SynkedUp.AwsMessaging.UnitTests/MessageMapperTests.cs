@@ -153,10 +153,12 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
         var publishAt = DateTimeOffset.UtcNow.AddDays(1);
         var roleArn = "role-arn";
         GetMock<IPublisherConfig>().Setup(x => x.SchedulerRoleArn).Returns(roleArn);
+        GetMock<IPublisherConfig>().Setup(x => x.Environment).Returns("dev");
         
         var result = ClassUnderTest.ToCreateScheduleRequest(topicArn, message, publishAt);
         
         Assert.That(result.Name, Is.Not.Null);
+        Assert.That(result.GroupName, Is.EqualTo("dev_scheduled_messages"));
         Assert.That(result.ScheduleExpression, Is.EqualTo($"at({publishAt:yyyy-MM-ddThh:mm:ss})"));
         Assert.That(result.ActionAfterCompletion, Is.EqualTo(ActionAfterCompletion.DELETE));
         Assert.That(result.Target.Arn, Is.EqualTo(topicArn));

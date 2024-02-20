@@ -60,6 +60,7 @@ internal class MessageMapper : IMessageMapper
         return new CreateScheduleRequest
         {
             Name = Guid.NewGuid().ToString(),
+            GroupName = $"{publisherConfig.Environment}_scheduled_messages",
             ScheduleExpression = $"at({publishAt:yyyy-MM-ddThh:mm:ss})",
             ActionAfterCompletion = ActionAfterCompletion.DELETE,
             Target = new Target
