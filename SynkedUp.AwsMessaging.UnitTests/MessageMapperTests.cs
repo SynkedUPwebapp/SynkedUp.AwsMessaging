@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Amazon.Scheduler;
 using Amazon.SQS.Model;
 using Emmersion.Testing;
 using NUnit.Framework;
@@ -135,5 +136,32 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
         
         Assert.That(exception!.Message, Is.EqualTo($"Error deserializing message on topic {topic}; data: {sqsMessage.Body}"));
         Assert.That(exception.InnerException, Is.SameAs(deserializationException));
+    }
+
+    [Test]
+    public void When_mapping_to_a_create_schedule_request()
+    {
+        var topic = new Topic("publisher", "test-event", 1);
+        var message = new Message<TestData>(topic, new TestData { Data = "hello there" })
+        {
+            CorrelationId = "correlation-id",
+            PublishedAt = DateTimeOffset.UtcNow
+        };
+        var topicArn = "topic-arn";
+        var json = "{\"example\":\"json\"}";
+        GetMock<IMessageSerializer>().Setup(x => x.Serialize(message.Body)).Returns(json);
+        var publishAt = DateTimeOffset.UtcNow.AddDays(1);
+        var roleArn = "role-arn";
+        GetMock<IPublisherConfig>().Setup(x => x.SchedulerRoleArn).Returns(roleArn);
+        
+        var result = ClassUnderTest.ToCreateScheduleRequest(topicArn, message, publishAt);
+        
+        Assert.That(result.Name, Is.Not.Null);
+        Assert.That(result.ScheduleExpression, Is.EqualTo($"at({publishAt:yyyy-MM-ddThh:mm:ss})"));
+        Assert.That(result.ActionAfterCompletion, Is.EqualTo(ActionAfterCompletion.DELETE));
+        Assert.That(result.Target.Arn, Is.EqualTo(topicArn));
+        Assert.That(result.Target.Input, Is.EqualTo(json));
+        Assert.That(result.Target.RoleArn, Is.EqualTo(roleArn));
+        Assert.That(result.FlexibleTimeWindow.Mode, Is.EqualTo(FlexibleTimeWindowMode.OFF));
     }
 }

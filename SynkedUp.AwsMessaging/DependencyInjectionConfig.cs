@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Amazon.Scheduler;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,7 @@ public class DependencyInjectionConfig
         services.AddTransient<ITopicArnCache, TopicArnCache>();
         
         services.AddAWSService<IAmazonSimpleNotificationService>();
+        services.AddAWSService<IAmazonScheduler>();
     }
 
     public static void ConfigureSubscriberServices(IServiceCollection services)

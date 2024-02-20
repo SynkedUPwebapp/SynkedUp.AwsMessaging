@@ -1,6 +1,8 @@
+using Amazon.Scheduler;
 using Amazon.SimpleNotificationService.Model;
 using Amazon.SQS.Model;
 using MessageAttributeValue = Amazon.SimpleNotificationService.Model.MessageAttributeValue;
+using Amazon.Scheduler.Model;
 
 namespace SynkedUp.AwsMessaging;
 
@@ -8,15 +10,18 @@ internal interface IMessageMapper
 {
     PublishRequest ToSnsRequest<T>(string topicArn, Message<T> message);
     Message<T> FromSqsMessage<T>(Topic topic, Message sqsMessage);
+    CreateScheduleRequest ToCreateScheduleRequest<T>(string topicArn, Message<T> message, DateTimeOffset publishAt);
 }
 
 internal class MessageMapper : IMessageMapper
 {
     private readonly IMessageSerializer serializer;
+    private readonly IPublisherConfig publisherConfig;
 
-    public MessageMapper(IMessageSerializer serializer)
+    public MessageMapper(IMessageSerializer serializer, IPublisherConfig publisherConfig)
     {
         this.serializer = serializer;
+        this.publisherConfig = publisherConfig;
     }
     
     public PublishRequest ToSnsRequest<T>(string topicArn, Message<T> message)
@@ -47,6 +52,26 @@ internal class MessageMapper : IMessageMapper
             CorrelationId = GetMessageAttribute(envelope, "CorrelationId", ""),
             PublishedAt = ParseTimestamp(GetMessageAttribute(envelope, "PublishedAt", "")),
             ReceivedAt = DateTimeOffset.UtcNow
+        };
+    }
+
+    public CreateScheduleRequest ToCreateScheduleRequest<T>(string topicArn, Message<T> message, DateTimeOffset publishAt)
+    {
+        return new CreateScheduleRequest
+        {
+            Name = Guid.NewGuid().ToString(),
+            ScheduleExpression = $"at({publishAt:yyyy-MM-ddThh:mm:ss})",
+            ActionAfterCompletion = ActionAfterCompletion.DELETE,
+            Target = new Target
+            {
+                Arn = topicArn,
+                Input = serializer.Serialize(message.Body),
+                RoleArn = publisherConfig.SchedulerRoleArn
+            },
+            FlexibleTimeWindow = new FlexibleTimeWindow
+            {
+                Mode = FlexibleTimeWindowMode.OFF
+            }
         };
     }
 

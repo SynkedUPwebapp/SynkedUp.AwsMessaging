@@ -104,4 +104,32 @@ public class RoundTripTests
         Assert.That(deadLetterMessages.Count, Is.GreaterThan(0));
         Assert.That(deadLetterMessages.Any(x => x.Contains(message.MessageId)), Is.True);
     }
+    
+    [Test]
+    public async Task When_scheduling_and_subscribing_to_messages()
+    {
+        var topic = new Topic("aws-messaging", "test", 0);
+        var subscription = new Subscription(topic, "aws-messaging", "integration-tests");
+        var message = new Message<TestData>(topic, new TestData
+        {
+            IntData = 1,
+            StringData = Guid.NewGuid().ToString()
+        });
+        var receivedMessages = new ConcurrentQueue<string>();
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        await subscriber.SubscribeAsync<TestData>(subscription, cancellationTokenSource.Token, x =>
+        {
+            receivedMessages.Enqueue(x.Body.StringData);
+            return Task.CompletedTask;
+        });
+        
+        await publisher.ScheduleAsync(message, DateTimeOffset.UtcNow.AddSeconds(1));
+
+        await Task.Delay(TimeSpan.FromSeconds(60));
+        cancellationTokenSource.Cancel();
+        
+        Assert.That(receivedMessages.Count, Is.GreaterThan(0));
+        Assert.That(receivedMessages, Does.Contain(message.Body.StringData));
+    }
 }
