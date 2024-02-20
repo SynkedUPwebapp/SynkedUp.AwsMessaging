@@ -20,7 +20,7 @@ jobs:
       
       - name: Pack
         working-directory: SynkedUp.AwsMessaging
-        run: 'dotnet pack -o . -p:PackageVersion=1.0.${{ github.run_number }}'
+        run: 'dotnet pack -o . -p:PackageVersion=1.1.${{ github.run_number }}'
         
       - name: Publish
         working-directory: SynkedUp.AwsMessaging
