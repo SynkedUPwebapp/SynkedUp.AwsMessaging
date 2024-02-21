@@ -159,7 +159,7 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
         
         Assert.That(result.Name, Is.Not.Null);
         Assert.That(result.GroupName, Is.EqualTo("dev_scheduled_messages"));
-        Assert.That(result.ScheduleExpression, Is.EqualTo($"at({publishAt:yyyy-MM-ddThh:mm:ss})"));
+        Assert.That(result.ScheduleExpression, Is.EqualTo($"at({publishAt:yyyy-MM-ddTHH:mm:ss})"));
         Assert.That(result.ScheduleExpressionTimezone, Is.EqualTo("UTC"));
         Assert.That(result.ActionAfterCompletion, Is.EqualTo(ActionAfterCompletion.DELETE));
         Assert.That(result.Target.Arn, Is.EqualTo(topicArn));

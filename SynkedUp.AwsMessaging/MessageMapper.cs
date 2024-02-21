@@ -61,7 +61,7 @@ internal class MessageMapper : IMessageMapper
         {
             Name = Guid.NewGuid().ToString(),
             GroupName = $"{publisherConfig.Environment}_scheduled_messages",
-            ScheduleExpression = $"at({publishAt.UtcDateTime:yyyy-MM-ddThh:mm:ss})",
+            ScheduleExpression = $"at({publishAt.UtcDateTime:yyyy-MM-ddTHH:mm:ss})",
             ScheduleExpressionTimezone = "UTC",
             ActionAfterCompletion = ActionAfterCompletion.DELETE,
             Target = new Target
