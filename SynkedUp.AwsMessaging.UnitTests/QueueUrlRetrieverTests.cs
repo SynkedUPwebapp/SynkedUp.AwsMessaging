@@ -29,6 +29,27 @@ internal class QueueUrlRetrieverTests : With_an_automocked<QueueUrlRetriever>
     }
     
     [Test]
+    public async Task When_getting_an_existing_queue_url_it_still_subscribes_the_queue_to_the_topic()
+    {
+        var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");
+        var environment = "env";
+        var queueName = subscription.EnvironmentName(environment);
+        var cancellationToken = new CancellationToken();
+        var topicArn = "topic-arn";
+        var getQueueUrlResponse = new GetQueueUrlResponse { QueueUrl = "queue-url" };
+        GetMock<ISubscriberConfig>().Setup(x => x.Environment).Returns(environment);
+        GetMock<IAmazonSQS>().Setup(x => x.GetQueueUrlAsync(queueName, cancellationToken))
+            .ReturnsAsync(getQueueUrlResponse);
+        GetMock<ITopicArnCache>().Setup(x => x.GetTopicArn(environment, subscription.Topic)).ReturnsAsync(topicArn);
+
+        var result = await ClassUnderTest.GetQueueUrlAndCreateIfNecessary(subscription, cancellationToken);
+
+        Assert.That(result, Is.EqualTo(getQueueUrlResponse.QueueUrl));
+        GetMock<IRetryingTopicSubscriber>().Verify(x => x.SubscribeToTopic(topicArn, getQueueUrlResponse.QueueUrl));
+        GetMock<IQueueCreator>().Verify(x => x.CreateQueue(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
     public async Task When_creating_a_new_queue()
     {
         var subscription = new Subscription(new Topic("test", "test-event", 1), "test", "listener");

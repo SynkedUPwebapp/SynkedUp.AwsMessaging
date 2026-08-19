@@ -34,6 +34,14 @@ internal class QueueUrlRetriever : IQueueUrlRetriever
     public async Task<string> GetQueueUrlAndCreateIfNecessary(Subscription subscription,  CancellationToken cancellationToken)
     {
         var queueName = subscription.EnvironmentName(config.Environment);
+        var topicArn = await topicArnCache.GetTopicArn(config.Environment, subscription.Topic);
+        var queueUrl = await GetQueueUrlOrCreate(subscription, queueName, cancellationToken);
+        await retryingTopicSubscriber.SubscribeToTopic(topicArn, queueUrl);
+        return queueUrl;
+    }
+
+    private async Task<string> GetQueueUrlOrCreate(Subscription subscription, string queueName, CancellationToken cancellationToken)
+    {
         try
         {
             var response = await sqsClient.GetQueueUrlAsync(queueName, cancellationToken);
@@ -41,12 +49,9 @@ internal class QueueUrlRetriever : IQueueUrlRetriever
         }
         catch (QueueDoesNotExistException)
         {
-            var topicArn = await topicArnCache.GetTopicArn(config.Environment, subscription.Topic);
             var deadLetterQueueName = subscription.EnvironmentDeadLetterName(config.Environment);
             var deadLetterQueueArn = await queueCreator.CreateDeadLetterQueue(deadLetterQueueName, cancellationToken);
-            var queueUrl = await queueCreator.CreateQueue(queueName, deadLetterQueueArn, cancellationToken);
-            await retryingTopicSubscriber.SubscribeToTopic(topicArn, queueUrl);
-            return queueUrl;
+            return await queueCreator.CreateQueue(queueName, deadLetterQueueArn, cancellationToken);
         }
     }
 
