@@ -7,6 +7,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     name: 'Publish to NuGet'
+    permissions:
+      id-token: write   # required for NuGet Trusted Publishing (OIDC token exchange)
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -24,6 +27,12 @@ jobs:
         working-directory: SynkedUp.AwsMessaging
         run: 'dotnet pack -o . -p:PackageVersion=2.0.${{ github.run_number }}'
         
+      - name: NuGet Login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Publish
         working-directory: SynkedUp.AwsMessaging
-        run: 'dotnet nuget push "*.nupkg" -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json'
+        run: 'dotnet nuget push "*.nupkg" -k ${{ steps.login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json'
