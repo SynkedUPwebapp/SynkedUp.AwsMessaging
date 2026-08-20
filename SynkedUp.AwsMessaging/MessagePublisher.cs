@@ -49,7 +49,7 @@ internal class MessagePublisher : IMessagePublisher
     {
         var stopwatch = Stopwatch.StartNew();
         var topicArn = await topicArnCache.GetTopicArn(config.Environment, message.Topic);
-        var createScheduleRequest = mapper.ToCreateScheduleRequest(topicArn, message with { PublishedAt = DateTimeOffset.UtcNow }, publishAt);
+        var createScheduleRequest = mapper.ToCreateScheduleRequest(config, topicArn, message with { PublishedAt = DateTimeOffset.UtcNow }, publishAt);
         await scheduler.CreateScheduleAsync(createScheduleRequest);
         OnMessageScheduled?.Invoke(this, new MessageScheduledArgs(message.Topic, publishAt, stopwatch.Elapsed));
     }

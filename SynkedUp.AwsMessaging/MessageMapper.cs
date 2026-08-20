@@ -10,18 +10,16 @@ internal interface IMessageMapper
 {
     PublishRequest ToSnsRequest<T>(string topicArn, Message<T> message);
     Message<T> FromSqsMessage<T>(Topic topic, Message sqsMessage);
-    CreateScheduleRequest ToCreateScheduleRequest<T>(string topicArn, Message<T> message, DateTimeOffset publishAt);
+    CreateScheduleRequest ToCreateScheduleRequest<T>(IPublisherConfig publisherConfig, string topicArn, Message<T> message, DateTimeOffset publishAt);
 }
 
 internal class MessageMapper : IMessageMapper
 {
     private readonly IMessageSerializer serializer;
-    private readonly IPublisherConfig publisherConfig;
 
-    public MessageMapper(IMessageSerializer serializer, IPublisherConfig publisherConfig)
+    public MessageMapper(IMessageSerializer serializer)
     {
         this.serializer = serializer;
-        this.publisherConfig = publisherConfig;
     }
     
     public PublishRequest ToSnsRequest<T>(string topicArn, Message<T> message)
@@ -55,7 +53,7 @@ internal class MessageMapper : IMessageMapper
         };
     }
 
-    public CreateScheduleRequest ToCreateScheduleRequest<T>(string topicArn, Message<T> message, DateTimeOffset publishAt)
+    public CreateScheduleRequest ToCreateScheduleRequest<T>(IPublisherConfig publisherConfig, string topicArn, Message<T> message, DateTimeOffset publishAt)
     {
         return new CreateScheduleRequest
         {

@@ -73,10 +73,11 @@ internal class MessagePublisherTests : With_an_automocked<MessagePublisher>
         var createScheduleRequest = new CreateScheduleRequest();
         Message<string>? publishedMessage = null;
         var publishAt = DateTimeOffset.UtcNow.AddDays(1);
-        GetMock<IPublisherConfig>().Setup(x => x.Environment).Returns(environment);
+        var config = GetMock<IPublisherConfig>();
+        config.Setup(x => x.Environment).Returns(environment);
         GetMock<ITopicArnCache>().Setup(x => x.GetTopicArn(environment, message.Topic)).ReturnsAsync(topicArn);
-        GetMock<IMessageMapper>().Setup(x => x.ToCreateScheduleRequest(topicArn, IsAny<Message<string>>(), publishAt))
-            .Callback<string, Message<string>, DateTimeOffset>((_, x, y) => publishedMessage = x)
+        GetMock<IMessageMapper>().Setup(x => x.ToCreateScheduleRequest(config.Object, topicArn, IsAny<Message<string>>(), publishAt))
+            .Callback<IPublisherConfig, string, Message<string>, DateTimeOffset>((_, _, x, _) => publishedMessage = x)
             .Returns(createScheduleRequest);
 
         await ClassUnderTest.ScheduleAsync(message, publishAt);

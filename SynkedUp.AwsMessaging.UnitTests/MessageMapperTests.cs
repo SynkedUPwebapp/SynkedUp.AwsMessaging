@@ -152,10 +152,11 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
         GetMock<IMessageSerializer>().Setup(x => x.Serialize(message.Body)).Returns(json);
         var publishAt = DateTimeOffset.UtcNow.AddDays(1);
         var roleArn = "role-arn";
-        GetMock<IPublisherConfig>().Setup(x => x.SchedulerRoleArn).Returns(roleArn);
-        GetMock<IPublisherConfig>().Setup(x => x.Environment).Returns("dev");
-        
-        var result = ClassUnderTest.ToCreateScheduleRequest(topicArn, message, publishAt);
+        var publisherConfig = GetMock<IPublisherConfig>();
+        publisherConfig.Setup(x => x.SchedulerRoleArn).Returns(roleArn);
+        publisherConfig.Setup(x => x.Environment).Returns("dev");
+
+        var result = ClassUnderTest.ToCreateScheduleRequest(publisherConfig.Object, topicArn, message, publishAt);
         
         Assert.That(result.Name, Is.Not.Null);
         Assert.That(result.GroupName, Is.EqualTo("dev_scheduled_messages"));
