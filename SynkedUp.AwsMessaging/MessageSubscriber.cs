@@ -85,7 +85,7 @@ internal class MessageSubscriber : IMessageSubscriber
             QueueUrl = request.QueueUrl,
             Entries = new List<DeleteMessageBatchRequestEntry>()
         };
-        foreach (var sqsMessage in response.Messages)
+        foreach (var sqsMessage in response.Messages ?? Enumerable.Empty<Message>())
         {
             if (await messageProcessor(sqsMessage))
             {

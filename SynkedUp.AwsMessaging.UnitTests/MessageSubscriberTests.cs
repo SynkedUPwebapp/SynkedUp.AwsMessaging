@@ -71,6 +71,19 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
     }
 
     [Test]
+    public async Task When_receiving_an_empty_batch()
+    {
+        var request = new ReceiveMessageRequest { QueueUrl = "queue-url" };
+        var cancellationToken = CancellationToken.None;
+        GetMock<IAmazonSQS>().Setup(x => x.ReceiveMessageAsync(request, cancellationToken))
+            .ReturnsAsync(new ReceiveMessageResponse { Messages = null });
+
+        await ClassUnderTest.GetMessageBatch(request, _ => Task.FromResult(true), cancellationToken);
+
+        GetMock<IAmazonSQS>().VerifyNever(x => x.DeleteMessageBatchAsync(IsAny<DeleteMessageBatchRequest>(), IsAny<CancellationToken>()));
+    }
+
+    [Test]
     public async Task When_processing_a_message_successfully()
     {
         var subscription = new Subscription(new Topic("test", "example", 1), "test", "listener");
