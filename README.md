@@ -159,3 +159,6 @@ They also require 2 topics to be set up:
 
 ### v1.0
 Initial release.
+
+### v2.0
+Updated dependencies; now .NET 8 is the lowest-supported framework.
