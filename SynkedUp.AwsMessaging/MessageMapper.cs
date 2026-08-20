@@ -98,7 +98,15 @@ internal class MessageMapper : IMessageMapper
 
     private string GetMessageAttribute(SqsMessageEnvelope envelope, string key, string defaultValue)
     {
-        return envelope.MessageAttributes?.GetValueOrDefault(key)?.Value ?? defaultValue;
+        if (envelope.MessageAttributes == null)
+        {
+            return defaultValue;
+        }
+        if (envelope.MessageAttributes.TryGetValue(key, out var attribute))
+        {
+            return attribute?.Value ?? defaultValue;
+        }
+        return defaultValue;
     }
 
     private DateTimeOffset? ParseTimestamp(string? timestamp)
