@@ -25,7 +25,7 @@ jobs:
       
       - name: Pack
         working-directory: SynkedUp.AwsMessaging
-        run: 'dotnet pack -o . -p:PackageVersion=2.0.${{ github.run_number }}'
+        run: 'dotnet pack -o . -p:PackageVersion=2.1.${{ github.run_number }}'
         
       - name: NuGet Login
         id: login

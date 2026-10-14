@@ -55,6 +55,93 @@ You can also optionally add a `CorrelationId` string on the `Message<T>`.
 > We recommend you create them as part of your IaC tooling (such as a terraform script).
 
 
+## Throttled Publishing
+
+When publishing a large number of messages at once, such as for a backfill,
+the backlog can delay real-time messages behind it in every subscribed queue.
+The `IThrottledMessagePublisher` paces publishing so the queues subscribed to
+the topic stay shallow enough that a newly published real-time message is not
+delayed by more than a configured maximum.
+It adapts to how quickly subscribers are processing messages: it slows down
+during busy periods and speeds up when subscribers have spare capacity.
+
+> **NOTE:** Only use throttled publishing for bulk work.
+> Real-time messages should continue to be published with `IMessagePublisher`.
+
+### Configuration
+
+In addition to the publisher configuration above, set up your DI container:
+
+```csharp
+SynkedUp.AwsMessaging.DependencyInjectionConfig.ConfigurePublisherServices(services);
+SynkedUp.AwsMessaging.DependencyInjectionConfig.ConfigureThrottledPublisherServices(services);
+services.AddDefaultAWSOptions(configuration.GetAWSOptions());
+```
+
+You must also register an instance of `IQueueCapacityMonitorConfig` with the following field:
+* `MaximumMessageDelayMilliseconds` - the target maximum time a newly published message
+  should wait in any subscribed queue (e.g. `30000`)
+
+Throttled publishing requires these additional IAM permissions:
+* `sns:ListSubscriptionsByTopic`
+* `sqs:GetQueueUrl`
+* `sqs:GetQueueAttributes`
+
+### Publishing a Message
+
+```csharp
+foreach (var customer in customersToBackfill)
+{
+    var message = new Message<CustomerUpdated>(topic, customer);
+    if (!await throttledPublisher.PublishAsync(message, cancellationToken))
+    {
+        break;
+    }
+}
+```
+
+Each call waits until there is capacity and then publishes the message, returning `true`.
+If the cancellation token is canceled while waiting, the message is not published and
+the call returns `false` without throwing an exception, so a backfill can be stopped gracefully.
+
+If you need to wait without publishing through the library (for example, to bound
+concurrency in your own publishing loop), use `IQueueCapacityMonitor` directly.
+Each call to `WaitForCapacityAsync` that returns `true` allows exactly one publish:
+
+```csharp
+if (await queueCapacityMonitor.WaitForCapacityAsync(topic, cancellationToken))
+{
+    await publisher.PublishAsync(message);
+}
+```
+
+### How It Works
+
+* Every few seconds while publishing, the depth of each queue subscribed to the topic is sampled.
+* The rate at which each queue is draining is estimated from those samples and the
+  messages this process has published. Messages published by other processes are
+  treated as part of the queue's load, so the estimate errs on the side of publishing slower.
+* Publishing is paced so the slowest queue's backlog stays within `MaximumMessageDelayMilliseconds`.
+* No AWS calls are made unless something is waiting for capacity.
+* If the queues cannot be sampled, publishing pauses until sampling succeeds (it fails closed).
+  If a subscriber stops processing messages, publishing pauses until it recovers.
+  Use a cancellation token to limit how long a caller will wait; cancellation returns `false` rather than throwing.
+* Multiple processes can publish to the same topic at once without extra configuration.
+
+### Monitoring
+
+```csharp
+queueCapacityMonitor.OnWaitingForCapacity += (_, args) =>
+{
+    logger.debug($"Waiting {args.WaitTime} for {args.LimitingQueueName} (estimated delay {args.LimitingQueueEstimatedDelay})");
+};
+queueCapacityMonitor.OnException += (_, args) =>
+{
+    logger.warn(args.Exception, $"Unable to sample queues for {args.Topic}");
+};
+```
+
+
 ## Subscribing to Messages
 
 ### Configuration
@@ -92,6 +179,23 @@ If the SQS queue does not exist, it will be created along with a corresponding d
 
 Messages will continue to be received until the cancellationToken is marked canceled.
 
+Each received message has a `ReceiveCount` indicating how many times delivery has been attempted,
+including the current attempt (`1` on the first delivery).
+It comes from SQS's `ApproximateReceiveCount`, which is the same count used to decide when a message
+is moved to the dead-letter queue, so a message is on its last attempt when
+`ReceiveCount == DeadLetterAfterAttempts`:
+
+```csharp
+await subscriber.SubscribeAsync(subscription, cancellationToken, async (Message<CustomerUpdated> message) =>
+{
+    if (message.ReceiveCount > 1)
+    {
+        logger.info($"Retrying message {message.MessageId}; attempt {message.ReceiveCount}");
+    }
+    await DoSomethingWith(message);
+});
+```
+
 ### Reading from Dead-Letter Queues
 
 You can also subscribe to messages from a dead-letter queue:
@@ -124,6 +228,24 @@ subscriber.OnMessageReceived += (_, args) =>
 };
 ```
 
+When a message fails to process, the `OnException` args include the message's `ReceiveCount` (if available).
+A failure where `ReceiveCount >= DeadLetterAfterAttempts` means the message will most likely be moved to the
+dead-letter queue instead of being retried:
+
+```csharp
+subscriber.OnException += (_, args) =>
+{
+    if (args.ReceiveCount >= subscriberConfig.DeadLetterAfterAttempts)
+    {
+        logger.error(args.Exception, $"Message on {args.Subscription} is being dead-lettered");
+    }
+};
+```
+
+This is a best-effort signal: a message can also be dead-lettered without raising this event
+(for example, if the process stops mid-processing on the final attempt),
+so we still recommend alerting on the depth of the dead-letter queues.
+
 The `IMessageProcessor` also emits events so you can measure how long it is taking to send a message:
 
 ```csharp
@@ -144,6 +266,7 @@ with data which cannot be otherwise set on the message object:
 var message = new TestMessageBuilder<SomeClass>()
     .WithPublishedAt(publishedAt)
     .WithReceivedAt(receivedAt)
+    .WithReceiveCount(receiveCount)
     .Build(body);
 ```
 
@@ -162,3 +285,7 @@ Initial release.
 
 ### v2.0
 Updated dependencies; now .NET 8 is the lowest-supported framework.
+
+### v2.1
+Added throttled publishing (`IThrottledMessagePublisher` and `IQueueCapacityMonitor`) for bulk work such as backfills.
+Added `ReceiveCount` to received messages and to subscriber exception events.
