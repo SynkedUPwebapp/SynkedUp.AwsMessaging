@@ -125,18 +125,20 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         ExceptionArgs? exceptionArgs = null;
         MessageReceivedArgs? receivedArgs = null;
         GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<TestData>(subscription.Topic, sqsMessage)).Throws(exception);
+        GetMock<IMessageMapper>().Setup(x => x.GetReceiveCount(sqsMessage)).Returns(4);
 
         ClassUnderTest.OnException += (_, args) => exceptionArgs = args;
         ClassUnderTest.OnMessageReceived += (_, args) => receivedArgs = args;
 
         var result = await ClassUnderTest.ProcessMessage<TestData>(subscription, sqsMessage, _ => throw exception);
-        
+
         Assert.That(result, Is.False);
-        
+
         Assert.That(exceptionArgs, Is.Not.Null);
         Assert.That(exceptionArgs!.Subscription, Is.EqualTo(subscription));
         Assert.That(exceptionArgs.Exception, Is.EqualTo(exception));
-        
+        Assert.That(exceptionArgs.ReceiveCount, Is.EqualTo(4));
+
         Assert.That(receivedArgs, Is.Not.Null);
         Assert.That(receivedArgs!.Subscription, Is.EqualTo(subscription));
         Assert.That(receivedArgs.PublishedAt, Is.Null);
@@ -158,18 +160,20 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         ExceptionArgs? exceptionArgs = null;
         MessageReceivedArgs? receivedArgs = null;
         GetMock<IMessageMapper>().Setup(x => x.FromSqsMessage<TestData>(subscription.Topic, sqsMessage)).Returns(mapped);
+        GetMock<IMessageMapper>().Setup(x => x.GetReceiveCount(sqsMessage)).Returns(2);
 
         ClassUnderTest.OnException += (_, args) => exceptionArgs = args;
         ClassUnderTest.OnMessageReceived += (_, args) => receivedArgs = args;
 
         var result = await ClassUnderTest.ProcessMessage<TestData>(subscription, sqsMessage, _ => throw exception);
-        
+
         Assert.That(result, Is.False);
-        
+
         Assert.That(exceptionArgs, Is.Not.Null);
         Assert.That(exceptionArgs!.Subscription, Is.EqualTo(subscription));
         Assert.That(exceptionArgs.Exception, Is.EqualTo(exception));
-        
+        Assert.That(exceptionArgs.ReceiveCount, Is.EqualTo(2));
+
         Assert.That(receivedArgs, Is.Not.Null);
         Assert.That(receivedArgs!.Subscription, Is.EqualTo(subscription));
         Assert.That(receivedArgs.PublishedAt, Is.EqualTo(mapped.PublishedAt));

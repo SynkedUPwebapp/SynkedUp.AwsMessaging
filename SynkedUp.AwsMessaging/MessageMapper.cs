@@ -11,6 +11,7 @@ internal interface IMessageMapper
 {
     PublishRequest ToSnsRequest<T>(string topicArn, Message<T> message);
     Message<T> FromSqsMessage<T>(Topic topic, Message sqsMessage);
+    int? GetReceiveCount(Message sqsMessage);
     CreateScheduleRequest ToCreateScheduleRequest<T>(IPublisherConfig publisherConfig, string topicArn, Message<T> message, DateTimeOffset publishAt);
 }
 
@@ -109,7 +110,7 @@ internal class MessageMapper : IMessageMapper
         return defaultValue;
     }
 
-    private int? GetReceiveCount(Message sqsMessage)
+    public int? GetReceiveCount(Message sqsMessage)
     {
         if (sqsMessage.Attributes == null)
         {

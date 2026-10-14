@@ -120,7 +120,7 @@ internal class MessageSubscriber : IMessageSubscriber
         }
         catch (Exception e)
         {
-            OnException?.Invoke(this, new ExceptionArgs(subscription, e));
+            OnException?.Invoke(this, new ExceptionArgs(subscription, e, messageMapper.GetReceiveCount(sqsMessage)));
             return false;
         }
         finally
