@@ -23,6 +23,19 @@ public class DependencyInjectionConfig
         services.AddAWSService<IAmazonScheduler>();
     }
 
+    public static void ConfigureThrottledPublisherServices(IServiceCollection services)
+    {
+        services.AddSingleton<IQueueCapacityMonitor, QueueCapacityMonitor>();
+        services.AddSingleton<IThrottledMessagePublisher, ThrottledMessagePublisher>();
+
+        services.AddTransient<ITopicQueueResolver, TopicQueueResolver>();
+        services.AddTransient<IQueueDepthSampler, QueueDepthSampler>();
+        services.AddTransient<IDelayer, Delayer>();
+        services.AddTransient<IClock, Clock>();
+
+        services.AddAWSService<IAmazonSQS>();
+    }
+
     public static void ConfigureSubscriberServices(IServiceCollection services)
     {
         services.AddSingleton<IMessageSubscriber, MessageSubscriber>();
