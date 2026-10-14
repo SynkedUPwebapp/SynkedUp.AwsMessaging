@@ -70,11 +70,16 @@ public class RoundTripTests
             StringData = "this message should dead-letter"
         });
         var receivedMessageIds = new ConcurrentQueue<string>();
+        var receiveCounts = new ConcurrentQueue<int?>();
         var cancellationTokenSource = new CancellationTokenSource();
 
         await subscriber.SubscribeAsync<TestData>(subscription, cancellationTokenSource.Token, x =>
         {
             receivedMessageIds.Enqueue(x.MessageId);
+            if (x.MessageId == message.MessageId)
+            {
+                receiveCounts.Enqueue(x.ReceiveCount);
+            }
             throw new Exception("If we cannot process the message then it should dead-letter");
         });
         
@@ -90,6 +95,8 @@ public class RoundTripTests
         });
         
         Assert.That(receivedMessageIds.Where(x => x == message.MessageId).Count, Is.EqualTo(5));
+        Assert.That(receiveCounts, Does.Contain(1));
+        Assert.That(receiveCounts, Does.Contain(5));
 
         var deadLetterMessages = new ConcurrentQueue<string>();
         await subscriber.SubscribeToDeadLettersAsync(subscription, cancellationTokenSource.Token, x =>

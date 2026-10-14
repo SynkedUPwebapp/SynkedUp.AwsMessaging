@@ -61,7 +61,8 @@ internal class MessageSubscriberTests : With_an_automocked<MessageSubscriber>
         Assert.That(request!.QueueUrl, Is.EqualTo(queueUrl));
         Assert.That(request.MaxNumberOfMessages, Is.EqualTo(maxNumberOfMessages));
         Assert.That(request.WaitTimeSeconds, Is.EqualTo(waitTimeSeconds));
-        
+        Assert.That(request.MessageSystemAttributeNames, Does.Contain(MessageSystemAttributeName.ApproximateReceiveCount));
+
         Assert.That(messagesReceived.Count, Is.GreaterThanOrEqualTo(3));
         Assert.That(messagesReceived[0].Body.Data, Is.EqualTo("m1"));
         Assert.That(messagesReceived[1].Body.Data, Is.EqualTo("m2"));

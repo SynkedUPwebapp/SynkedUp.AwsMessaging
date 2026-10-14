@@ -16,6 +16,7 @@ public class TestMessageBuilderTests
         Assert.That(message.CorrelationId, Is.Empty);
         Assert.That(message.PublishedAt, Is.Null);
         Assert.That(message.ReceivedAt, Is.Null);
+        Assert.That(message.ReceiveCount, Is.Null);
     }
 
     [Test]
@@ -34,6 +35,7 @@ public class TestMessageBuilderTests
             .WithCorrelationId(correlationId)
             .WithPublishedAt(publishedAt)
             .WithReceivedAt(receivedAt)
+            .WithReceiveCount(2)
             .Build(body);
 
         Assert.That(message.Body, Is.SameAs(body));
@@ -42,5 +44,6 @@ public class TestMessageBuilderTests
         Assert.That(message.CorrelationId, Is.EqualTo(correlationId));
         Assert.That(message.PublishedAt, Is.EqualTo(publishedAt));
         Assert.That(message.ReceivedAt, Is.EqualTo(receivedAt));
+        Assert.That(message.ReceiveCount, Is.EqualTo(2));
     }
 }

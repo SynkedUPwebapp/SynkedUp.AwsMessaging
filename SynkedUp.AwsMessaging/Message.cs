@@ -8,6 +8,7 @@ public record Message<T>
     public T Body { get; }
     public DateTimeOffset? PublishedAt { get; internal init; }
     public DateTimeOffset? ReceivedAt { get; internal init; }
+    public int? ReceiveCount { get; internal init; }
 
     public Message(Topic topic, T body)
     {

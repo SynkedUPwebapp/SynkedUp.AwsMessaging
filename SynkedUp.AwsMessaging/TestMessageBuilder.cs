@@ -7,6 +7,7 @@ public class TestMessageBuilder<T>
     private string correlationId = "";
     private DateTimeOffset? publishedAt;
     private DateTimeOffset? receivedAt;
+    private int? receiveCount;
 
     public TestMessageBuilder<T> WithMessageId(string messageId)
     {
@@ -38,6 +39,12 @@ public class TestMessageBuilder<T>
         return this;
     }
 
+    public TestMessageBuilder<T> WithReceiveCount(int? receiveCount)
+    {
+        this.receiveCount = receiveCount;
+        return this;
+    }
+
     public Message<T> Build(T body)
     {
         return new Message<T>(messageId, topic, body)
@@ -45,6 +52,7 @@ public class TestMessageBuilder<T>
             CorrelationId = correlationId,
             PublishedAt = publishedAt,
             ReceivedAt = receivedAt,
+            ReceiveCount = receiveCount,
         };
     }
 }

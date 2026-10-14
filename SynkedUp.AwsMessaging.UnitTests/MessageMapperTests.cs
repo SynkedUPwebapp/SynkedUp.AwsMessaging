@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Amazon.Scheduler;
+using Amazon.SQS;
 using Amazon.SQS.Model;
 using Emmersion.Testing;
 using NUnit.Framework;
@@ -61,7 +62,14 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
     public void When_mapping_from_an_sqs_message()
     {
         var topic = new Topic("test", "example", 1);
-        var sqsMessage = new Message { Body = "sqs-message-body" };
+        var sqsMessage = new Message
+        {
+            Body = "sqs-message-body",
+            Attributes = new Dictionary<string, string>
+            {
+                [MessageSystemAttributeName.ApproximateReceiveCount] = "3"
+            }
+        };
         var envelope = new SqsMessageEnvelope
         {
             Message = "envelope-data",
@@ -85,6 +93,7 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
         Assert.That(result.PublishedAt, Is.EqualTo(DateTimeOffset.Parse("2023-04-07T01:38:00-0600")));
         Assert.That(result.ReceivedAt.HasValue, Is.True);
         Assert.That(result.ReceivedAt, Is.EqualTo(DateTimeOffset.UtcNow).Within(Seconds(1)));
+        Assert.That(result.ReceiveCount, Is.EqualTo(3));
     }
     
     [Test]
@@ -110,6 +119,28 @@ internal class MessageMapperTests : With_an_automocked<MessageMapper>
         Assert.That(result.PublishedAt, Is.Null);
         Assert.That(result.ReceivedAt.HasValue, Is.True);
         Assert.That(result.ReceivedAt, Is.EqualTo(DateTimeOffset.UtcNow).Within(Seconds(1)));
+        Assert.That(result.ReceiveCount, Is.Null);
+    }
+
+    [Test]
+    public void When_mapping_from_an_sqs_message_and_the_receive_count_is_not_a_number()
+    {
+        var topic = new Topic("test", "example", 1);
+        var sqsMessage = new Message
+        {
+            Body = "sqs-message-body",
+            Attributes = new Dictionary<string, string>
+            {
+                [MessageSystemAttributeName.ApproximateReceiveCount] = "not-a-number"
+            }
+        };
+        var envelope = new SqsMessageEnvelope { Message = "envelope-data" };
+        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<SqsMessageEnvelope>(sqsMessage.Body)).Returns(envelope);
+        GetMock<IMessageSerializer>().Setup(x => x.Deserialize<TestData>(envelope.Message)).Returns(new TestData { Data = "test-data" });
+
+        var result = ClassUnderTest.FromSqsMessage<TestData>(topic, sqsMessage);
+
+        Assert.That(result.ReceiveCount, Is.Null);
     }
     
     [Test]

@@ -41,7 +41,8 @@ internal class MessageSubscriber : IMessageSubscriber
         {
             QueueUrl = queueUrl,
             MaxNumberOfMessages = config.MaxNumberOfMessages,
-            WaitTimeSeconds = config.LongPollingSeconds
+            WaitTimeSeconds = config.LongPollingSeconds,
+            MessageSystemAttributeNames = new List<string> { MessageSystemAttributeName.ApproximateReceiveCount }
         };
         
 #pragma warning disable CS4014

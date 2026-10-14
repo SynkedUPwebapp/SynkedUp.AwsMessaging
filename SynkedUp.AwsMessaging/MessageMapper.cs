@@ -1,5 +1,6 @@
 using Amazon.Scheduler;
 using Amazon.SimpleNotificationService.Model;
+using Amazon.SQS;
 using Amazon.SQS.Model;
 using MessageAttributeValue = Amazon.SimpleNotificationService.Model.MessageAttributeValue;
 using Amazon.Scheduler.Model;
@@ -49,7 +50,8 @@ internal class MessageMapper : IMessageMapper
         {
             CorrelationId = GetMessageAttribute(envelope, "CorrelationId", ""),
             PublishedAt = ParseTimestamp(GetMessageAttribute(envelope, "PublishedAt", "")),
-            ReceivedAt = DateTimeOffset.UtcNow
+            ReceivedAt = DateTimeOffset.UtcNow,
+            ReceiveCount = GetReceiveCount(sqsMessage)
         };
     }
 
@@ -105,6 +107,20 @@ internal class MessageMapper : IMessageMapper
             return attribute?.Value ?? defaultValue;
         }
         return defaultValue;
+    }
+
+    private int? GetReceiveCount(Message sqsMessage)
+    {
+        if (sqsMessage.Attributes == null)
+        {
+            return null;
+        }
+        if (sqsMessage.Attributes.TryGetValue(MessageSystemAttributeName.ApproximateReceiveCount, out var value)
+            && int.TryParse(value, out var receiveCount))
+        {
+            return receiveCount;
+        }
+        return null;
     }
 
     private DateTimeOffset? ParseTimestamp(string? timestamp)
